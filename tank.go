@@ -7,13 +7,10 @@ import (
 )
 
 const (
-	tankw = 30
-	tankh = 20
-
 	turretw = 4
 	turreth = 15
 
-	turnSpeed = 1.0
+	turnSpeed = .5
 	maxSpeed  = 60
 
 	shotCooldown = 250 * time.Millisecond
@@ -33,11 +30,13 @@ type Turret struct {
 	*cp.Shape
 }
 
-func NewTank(space *cp.Space) *Tank {
+func NewTank(space *cp.Space, w, h int) *Tank {
+	width := float64(w)
+	height := float64(h)
 	tank := &Tank{}
 	tank.ControlBody = space.AddBody(cp.NewKinematicBody())
-	tank.Body = space.AddBody(cp.NewBody(1, cp.MomentForBox(1, tankw, tankh)))
-	tankShape := space.AddShape(cp.NewBox(tank.Body, tankw, tankh, 2))
+	tank.Body = space.AddBody(cp.NewBody(1, cp.MomentForBox(1, width, height)))
+	tankShape := space.AddShape(cp.NewBox(tank.Body, width, height, 2))
 	tankShape.SetElasticity(2)
 	tankShape.SetFilter(cp.NewShapeFilter(1, cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
 

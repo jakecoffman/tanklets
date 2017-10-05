@@ -7,15 +7,11 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/jakecoffman/cp"
 )
 
 const (
 	width  = 640
 	height = 480
-
-	hwidth  = width / 2
-	hheight = height / 2
 )
 
 var (
@@ -25,26 +21,6 @@ var (
 var Tanklets = NewGame(width, height)
 
 func Main() {
-	space := cp.NewSpace()
-
-	sides := []cp.Vector{
-		{-hwidth, -hheight}, {-hwidth, hheight},
-		{hwidth, -hheight}, {hwidth, hheight},
-		{-hwidth, -hheight}, {hwidth, -hheight},
-		{-hwidth, hheight}, {hwidth, hheight},
-	}
-
-	for i := 0; i < len(sides); i += 2 {
-		var seg *cp.Shape
-		seg = space.AddShape(cp.NewSegment(space.StaticBody, sides[i], sides[i+1], 0))
-		seg.SetElasticity(1)
-		seg.SetFriction(0)
-		//seg.SetFilter(core.NotGrabbableFilter)
-	}
-
-	tank1 = NewTank(space)
-	tank1.Body.SetPosition(cp.Vector{100, 100})
-
 	runtime.LockOSThread()
 
 	// glfw: initialize and configure
@@ -77,8 +53,8 @@ func Main() {
 
 	Tanklets.Init()
 
-	deltaTime := 0.5
-	lastFrame := 0.0
+	deltaTime := 0.
+	lastFrame := 0.
 
 	frames := 0
 	showFps := time.Tick(1 * time.Second)
@@ -97,7 +73,7 @@ func Main() {
 		glfw.PollEvents()
 
 		Tanklets.ProcessInput(deltaTime)
-		Tanklets.Update(float32(deltaTime), space)
+		Tanklets.Update(deltaTime)
 
 		gl.ClearColor(.2, .2, .8, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT)

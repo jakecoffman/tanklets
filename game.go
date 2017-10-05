@@ -1,10 +1,11 @@
 package tanklets
 
 import (
+	"fmt"
+
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
-	"fmt"
 )
 
 type Game struct {
@@ -13,7 +14,7 @@ type Game struct {
 	Width, Height int
 
 	renderer *SpriteRenderer
-	text *TextRenderer
+	text     *TextRenderer
 }
 
 // Game state
@@ -53,32 +54,22 @@ func (g *Game) Init() {
 }
 
 func (g *Game) ProcessInput(dt float64) {
-	if g.state != GAME_ACTIVE {
-		return
-	}
-
-	if g.Keys[glfw.KeyA] {
-	}
-	if g.Keys[glfw.KeyD] {
-	}
-	if g.Keys[glfw.KeySpace] {
-	}
-}
-
-func (g *Game) Update(dt float32, space *cp.Space) {
 	if Tanklets.Keys[glfw.KeyD] {
 		tank1.ControlBody.SetAngle(tank1.Body.Angle() - turnSpeed)
 	}
 	if Tanklets.Keys[glfw.KeyA] {
 		tank1.ControlBody.SetAngle(tank1.Body.Angle() + turnSpeed)
 	}
-	if Tanklets.Keys[glfw.KeyW] == false {
+	if Tanklets.Keys[glfw.KeyW] {
 		tank1.ControlBody.SetVelocityVector(tank1.Body.Rotation().Rotate(cp.Vector{maxSpeed, 0.0}))
 	} else if Tanklets.Keys[glfw.KeyS] {
 		tank1.ControlBody.SetVelocityVector(tank1.Body.Rotation().Rotate(cp.Vector{-maxSpeed, 0.0}))
 	} else {
 		tank1.ControlBody.SetVelocity(0, 0)
 	}
+}
+
+func (g *Game) Update(dt float32, space *cp.Space) {
 	space.Step(float64(dt))
 }
 

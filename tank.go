@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/jakecoffman/cp"
-	"github.com/jakecoffman/tanklets/core"
 )
 
 const (
@@ -62,24 +61,19 @@ func NewTank(space *cp.Space) *Tank {
 
 func (tank *Tank) Update(space *cp.Space) {
 	// update body
-	tank.ControlBody.SetAngle(tank.Body.Angle() - core.Keyboard.X*turnSpeed)
-	if core.Keyboard.Y == 0 {
-		tank.ControlBody.SetVelocity(0, 0)
-	} else {
-		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{maxSpeed * core.Keyboard.Y, 0.0}))
-	}
+
 
 	// update turret
-	tank.Turret.SetPosition(tank.Body.Position())
-	mouseDelta := core.Mouse.Sub(tank.Turret.Body.Position())
-	turn := tank.Turret.Rotation().Unrotate(mouseDelta).ToAngle()
-	tank.Turret.SetAngle(tank.Turret.Angle() - turn)
-
-	// fire
-	if core.RightClick && time.Now().Sub(tank.LastShot) > shotCooldown {
-		tank.Shoot(space)
-		tank.LastShot = time.Now()
-	}
+	//tank.Turret.SetPosition(tank.Body.Position())
+	//mouseDelta := core.Mouse.Sub(tank.Turret.Body.Position())
+	//turn := tank.Turret.Rotation().Unrotate(mouseDelta).ToAngle()
+	//tank.Turret.SetAngle(tank.Turret.Angle() - turn)
+	//
+	//// fire
+	//if core.RightClick && time.Now().Sub(tank.LastShot) > shotCooldown {
+	//	tank.Shoot(space)
+	//	tank.LastShot = time.Now()
+	//}
 }
 
 func (tank *Tank) Shoot(space *cp.Space) {

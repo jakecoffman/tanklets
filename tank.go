@@ -4,13 +4,14 @@ import (
 	"time"
 
 	"github.com/jakecoffman/cp"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 const (
 	turretw = 4
 	turreth = 15
 
-	turnSpeed = .5
+	turnSpeed = .1
 	maxSpeed  = 60
 
 	shotCooldown = 250 * time.Millisecond
@@ -21,6 +22,10 @@ type Tank struct {
 	*cp.Body
 	*cp.Shape
 
+	texture *Texture2D
+	width, height float64
+	color mgl32.Vec3
+
 	ControlBody *cp.Body
 	LastShot    time.Time
 }
@@ -30,10 +35,14 @@ type Turret struct {
 	*cp.Shape
 }
 
-func NewTank(space *cp.Space, w, h int) *Tank {
+func NewTank(space *cp.Space, texture *Texture2D, w, h int) *Tank {
 	width := float64(w)
 	height := float64(h)
-	tank := &Tank{}
+	tank := &Tank{
+		width: width,
+		height: height,
+		texture: texture,
+	}
 	tank.ControlBody = space.AddBody(cp.NewKinematicBody())
 	tank.Body = space.AddBody(cp.NewBody(1, cp.MomentForBox(1, width, height)))
 	tankShape := space.AddShape(cp.NewBox(tank.Body, width, height, 2))
@@ -45,7 +54,7 @@ func NewTank(space *cp.Space, w, h int) *Tank {
 	pivot.SetMaxForce(10000)
 
 	gear := space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
-	//gear.SetErrorBias(0) // attempt to fully correct the joint each step
+	gear.SetErrorBias(0) // attempt to fully correct the joint each step
 	gear.SetMaxBias(5)
 	gear.SetMaxForce(50000)
 
@@ -73,6 +82,16 @@ func (tank *Tank) Update(space *cp.Space) {
 	//	tank.Shoot(space)
 	//	tank.LastShot = time.Now()
 	//}
+}
+
+func (tank *Tank) Draw(renderer *SpriteRenderer) {
+	pos := tank.Position()
+	x, y := float32(pos.X - tank.width/2), float32(pos.Y - tank.height/2)
+	renderer.DrawSprite(tank.texture, mgl32.Vec2{x, y}, tank.Size(), tank1.Angle(), tank.color)
+}
+
+func (tank *Tank) Size() mgl32.Vec2 {
+	return mgl32.Vec2{float32(tank1.width), float32(tank1.height)}
 }
 
 func (tank *Tank) Shoot(space *cp.Space) {

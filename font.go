@@ -31,28 +31,27 @@ type character struct {
 	bearingV  int    //glyph bearing vertical
 }
 
-func NewTextRenderer(vertex, fragment string, width, height float32) *TextRenderer {
-	shader, err := ResourceManager.LoadShader(vertex, fragment, "text")
+func NewTextRenderer(shader *Shader, width, height float32, fontPath string) *TextRenderer {
 	shader.Use().SetMat4("projection", mgl32.Ortho2D(0, width, height, 0)).SetInt("text", 0)
-	if err != nil {
+
+	t := &TextRenderer{
+		shader: shader,
+	}
+	if err := t.Load(fontPath, 24); err != nil {
 		panic(err)
 	}
-	var VAO, VBO uint32
-	gl.GenVertexArrays(1, &VAO)
-	gl.GenBuffers(1, &VBO)
-	gl.BindVertexArray(VAO)
-	gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
+
+	gl.GenVertexArrays(1, &t.vao)
+	gl.GenBuffers(1, &t.vbo)
+	gl.BindVertexArray(t.vao)
+	gl.BindBuffer(gl.ARRAY_BUFFER, t.vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, 6*4*4, nil, gl.DYNAMIC_DRAW)
 
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 4, gl.FLOAT, false, 4*4, gl.PtrOffset(0))
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.BindVertexArray(0)
-	return &TextRenderer{
-		vao:    VAO,
-		vbo:    VBO,
-		shader: shader,
-	}
+	return t
 }
 
 func (t *TextRenderer) Load(fontPath string, scale uint32) error {
@@ -210,4 +209,3 @@ func (f *TextRenderer) Print(text string, x, y float32, scale float32) error {
 	gl.UseProgram(0)
 	return nil
 }
-

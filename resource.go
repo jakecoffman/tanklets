@@ -17,26 +17,26 @@ var ResourceManager = &resourceManager{
 	textures: map[string]*Texture2D{},
 }
 
-func (r *resourceManager) LoadShader(vertexPath, fragmentPath, name string) (*Shader, error) {
+func (r *resourceManager) LoadShader(vertexPath, fragmentPath, name string) *Shader {
 	var vertexCode, fragmentCode string
 
 	{
 		bytes, err := ioutil.ReadFile(vertexPath)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		vertexCode = string(bytes)
 
 		bytes, err = ioutil.ReadFile(fragmentPath)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		fragmentCode = string(bytes)
 	}
 
 	shader := NewShader(vertexCode, fragmentCode)
 	r.shaders[name] = shader
-	return shader, nil
+	return shader
 }
 
 func (r *resourceManager) Shader(name string) *Shader {

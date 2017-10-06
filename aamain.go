@@ -10,8 +10,11 @@ import (
 )
 
 const (
-	width  = 640
-	height = 480
+	width  = 400
+	height = 400
+
+	hwidth  = width/2
+	hheight = height/2
 )
 
 var (
@@ -35,13 +38,14 @@ func Main() {
 	}
 
 	// glfw window creation
-	window, err := glfw.CreateWindow(width, height, "Breakout", nil, nil)
+	window, err := glfw.CreateWindow(width, height, "Tanklets", nil, nil)
 	if err != nil {
 		panic(err)
 	}
 	defer window.Destroy()
 	window.MakeContextCurrent()
 	window.SetKeyCallback(keyCallback)
+	window.SetFramebufferSizeCallback(framebufferSizeCallback)
 
 	if err := gl.Init(); err != nil {
 		panic(err)
@@ -64,7 +68,7 @@ func Main() {
 		frames++
 		select {
 		case <-showFps:
-			window.SetTitle(fmt.Sprintf("Breakout | %d FPS", frames))
+			window.SetTitle(fmt.Sprintf("Tanklets | %d FPS", frames))
 			frames = 0
 		default:
 		}
@@ -75,7 +79,7 @@ func Main() {
 		Tanklets.ProcessInput(deltaTime)
 		Tanklets.Update(deltaTime)
 
-		gl.ClearColor(.2, .2, .8, 1)
+		gl.ClearColor(.1, .1, .1, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
 		Tanklets.Render()
@@ -97,4 +101,8 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 			Tanklets.Keys[key] = false
 		}
 	}
+}
+
+func framebufferSizeCallback(w *glfw.Window, width int, height int) {
+	gl.Viewport(0, 0, int32(width), int32(height))
 }

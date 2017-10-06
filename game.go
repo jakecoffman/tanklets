@@ -1,8 +1,6 @@
 package tanklets
 
 import (
-	"fmt"
-
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
@@ -15,6 +13,7 @@ type Game struct {
 
 	renderer *SpriteRenderer
 	text     *TextRenderer
+	simple   *SimpleRenderer
 
 	space *cp.Space
 }
@@ -37,18 +36,15 @@ func NewGame(width, height int) *Game {
 func (g *Game) Init() {
 	// shaders
 	ResourceManager.LoadShader("shaders/main.vs.glsl", "shaders/main.fs.glsl", "sprite")
-	g.text = NewTextRenderer("shaders/text.vs.glsl", "shaders/text.fs.glsl", width, height)
-	if err := g.text.Load("textures/Roboto-Light.ttf", 24); err != nil {
-		panic(err)
-	}
-	g.text.SetColor(.8, .8, .3, 1)
+	ResourceManager.LoadShader("shaders/simple.vs.glsl", "shaders/simple.fs.glsl", "simple")
+	ResourceManager.LoadShader("shaders/text.vs.glsl", "shaders/text.fs.glsl", "text")
 
-	projection := mgl32.Ortho2D(0, float32(width), float32(height), 0)
-	ResourceManager.Shader("sprite").
-		Use().
-		SetInt("sprite", 0).
-		SetMat4("projection", projection)
-	g.renderer = NewSpriteRenderer(ResourceManager.Shader("sprite"))
+	// renderers
+	projection := mgl32.Ortho2D(0, width, height, 0)
+	g.text = NewTextRenderer(ResourceManager.Shader("text"), width, height, "textures/Roboto-Light.ttf")
+	g.text.SetColor(.8, .8, .3, 1)
+	g.simple = NewSimpleRenderer(ResourceManager.Shader("simple"), projection)
+	g.renderer = NewSpriteRenderer(ResourceManager.Shader("sprite"), projection)
 
 	// textures
 	ResourceManager.LoadTexture("textures/tank.png", "tank")
@@ -57,22 +53,21 @@ func (g *Game) Init() {
 	g.space = cp.NewSpace()
 
 	sides := []cp.Vector{
-		{0, 0},
-		{0, height},
-		{width, height},
-		{width, 0},
-		{0, 0},
+		{0, 0}, {0, height},
+		{width, 0}, {width, height},
+		{0, 0}, {width, 0},
+		{0, height}, {width, height},
 	}
 
-	for i := 1; i < len(sides); i++ {
+	for i := 0; i < len(sides); i += 2 {
 		var seg *cp.Shape
-		seg = g.space.AddShape(cp.NewSegment(g.space.StaticBody, sides[i-1], sides[i], 0))
+		seg = g.space.AddShape(cp.NewSegment(g.space.StaticBody, sides[i], sides[i+1], 0))
 		seg.SetElasticity(1)
-		seg.SetFriction(0)
-		//seg.SetFilter(core.NotGrabbableFilter)
+		seg.SetFriction(1)
+		//seg.SetFilter(examples.NotGrabbableFilter)
 	}
-	tankTexture := ResourceManager.Texture("tank")
-	tank1 = NewTank(g.space, tankTexture.Width, tankTexture.Height)
+	tank1 = NewTank(g.space, ResourceManager.Texture("tank"), 20, 30)
+	tank1.color = mgl32.Vec3{.4, .2, .8}
 	tank1.Body.SetPosition(cp.Vector{100, 100})
 
 	g.state = GAME_ACTIVE
@@ -99,11 +94,11 @@ func (g *Game) Update(dt float64) {
 }
 
 func (g *Game) Render() {
-	pos := tank1.Position()
-	tank := ResourceManager.Texture("tank")
+	tank1.Draw(g.renderer)
 
-	g.renderer.DrawSprite(tank, mgl32.Vec2{float32(pos.X), float32(pos.Y)}, mgl32.Vec2{float32(tank.Width), float32(tank.Height)}, tank1.Angle(), DefaultColor)
-	g.text.Print(fmt.Sprint("Tanklets! ", tank.Width, tank.Height), 10, 25, 1)
+	//g.text.Print(fmt.Sprint("Tanklets! ", tank1.Angle()), 20, 30, 1)
+
+	//g.simple.Draw(float32(pos.X), float32(pos.Y), float32(tank1.width), float32(tank1.height), float32(tank1.Angle()), 0, 0, 0, .5)
 }
 
 func (g *Game) Pause() {

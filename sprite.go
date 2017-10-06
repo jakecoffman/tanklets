@@ -10,8 +10,9 @@ type SpriteRenderer struct {
 	quadVAO uint32
 }
 
-func NewSpriteRenderer(shader *Shader) *SpriteRenderer {
+func NewSpriteRenderer(shader *Shader, projection mgl32.Mat4) *SpriteRenderer {
 	renderer := &SpriteRenderer{shader: shader}
+	shader.Use().SetInt("sprite", 0).SetMat4("projection", projection)
 	renderer.initRenderData()
 	return renderer
 }
@@ -24,8 +25,7 @@ var (
 
 func (s *SpriteRenderer) DrawSprite(texture *Texture2D, position, size mgl32.Vec2, rotate float64, color mgl32.Vec3) {
 	s.shader.Use()
-	var model mgl32.Mat4
-	model = mgl32.Translate3D(position.X(), position.Y(), 0)
+	model := mgl32.Translate3D(position.X(), position.Y(), 0)
 
 	model = model.Mul4(mgl32.Translate3D(0.5*size.X(), 0.5*size.Y(), 0))
 	model = model.Mul4(mgl32.HomogRotate3D(float32(rotate), mgl32.Vec3{0, 0, 1}))
@@ -33,8 +33,7 @@ func (s *SpriteRenderer) DrawSprite(texture *Texture2D, position, size mgl32.Vec
 
 	model = model.Mul4(mgl32.Scale3D(size.X(), size.Y(), 1))
 
-	s.shader.SetMat4("model", model)
-	s.shader.SetVec3f("spriteColor", color)
+	s.shader.SetMat4("model", model).SetVec3f("spriteColor", color)
 
 	gl.ActiveTexture(gl.TEXTURE0)
 	texture.Bind()

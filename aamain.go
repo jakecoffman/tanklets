@@ -7,21 +7,24 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/jakecoffman/cp"
 )
 
 const (
 	width  = 400
 	height = 400
-
-	hwidth  = width/2
-	hheight = height/2
 )
 
 var (
-	tank1 *Tank
-)
+	tank1      Tank
+	Mouse      cp.Vector
+	LeftClick = false
+	LeftDown = false
+	RightClick = false
+	RightDown  = false
 
-var Tanklets = NewGame(width, height)
+	Tanklets = NewGame(width, height)
+)
 
 func Main() {
 	runtime.LockOSThread()
@@ -46,6 +49,8 @@ func Main() {
 	window.MakeContextCurrent()
 	window.SetKeyCallback(keyCallback)
 	window.SetFramebufferSizeCallback(framebufferSizeCallback)
+	window.SetCursorPosCallback(cursorCallback)
+	window.SetMouseButtonCallback(mouseButtonCallback)
 
 	if err := gl.Init(); err != nil {
 		panic(err)
@@ -105,4 +110,42 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 
 func framebufferSizeCallback(w *glfw.Window, width int, height int) {
 	gl.Viewport(0, 0, int32(width), int32(height))
+}
+
+func cursorCallback(w *glfw.Window, xpos float64, ypos float64) {
+	Mouse = cp.Vector{xpos, ypos}
+}
+
+func mouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
+	if button == glfw.MouseButton1 {
+		LeftDown = action == glfw.Press
+		LeftClick = LeftDown
+		//if action == glfw.Press {
+//			// give the mouse click a little radius to make it easier to click small shapes.
+//			//radius := 5.0
+//
+//			//info := space.PointQueryNearest(Mouse, radius, GrabFilter)
+//			//
+//			//if info.Shape != nil && info.Shape.Body().Mass() < INFINITY {
+//			//	var nearest Vector
+//			//	if info.Distance > 0 {
+//			//		nearest = info.Point
+//			//	} else {
+//			//		nearest = Mouse
+//			//	}
+//			//
+//			//	body := info.Shape.Body()
+//			//	mouseJoint = NewPivotJoint2(mouseBody, body, Vector{}, body.WorldToLocal(nearest))
+//			//	mouseJoint.SetMaxForce(50000)
+//			//	mouseJoint.SetErrorBias(math.Pow(1.0-0.15, 60.0))
+//			//	space.AddConstraint(mouseJoint)
+//			}
+//		//} else if mouseJoint != nil {
+//		//	space.RemoveConstraint(mouseJoint)
+//		//	mouseJoint = nil
+//		//}
+	} else if button == glfw.MouseButton2 {
+		RightDown = action == glfw.Press
+		RightClick = RightDown
+	}
 }

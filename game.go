@@ -1,9 +1,12 @@
 package tanklets
 
 import (
+	"time"
+
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
+	"fmt"
 )
 
 type Game struct {
@@ -47,7 +50,18 @@ func (g *Game) Init() {
 	g.renderer = NewSpriteRenderer(ResourceManager.Shader("sprite"), projection)
 
 	// textures
-	ResourceManager.LoadTexture("textures/tank.png", "tank")
+	tankTexture, err := ResourceManager.LoadTexture("textures/tank.png", "tank")
+	if err != nil {
+		panic(err)
+	}
+	turretTexture, err := ResourceManager.LoadTexture("textures/turret.png", "turret")
+	if err != nil {
+		panic(err)
+	}
+	bulletTexture, err := ResourceManager.LoadTexture("textures/bullet.png", "bullet")
+	if err != nil {
+		panic(err)
+	}
 
 	// physics
 	g.space = cp.NewSpace()
@@ -66,7 +80,7 @@ func (g *Game) Init() {
 		seg.SetFriction(1)
 		//seg.SetFilter(examples.NotGrabbableFilter)
 	}
-	tank1 = NewTank(g.space, ResourceManager.Texture("tank"), 20, 30)
+	tank1 = NewTank(g.space, tankTexture, turretTexture, bulletTexture, 20, 30)
 	tank1.color = mgl32.Vec3{.4, .2, .8}
 	tank1.Body.SetPosition(cp.Vector{100, 100})
 
@@ -76,9 +90,13 @@ func (g *Game) Init() {
 func (g *Game) ProcessInput(dt float64) {
 	if Tanklets.Keys[glfw.KeyD] {
 		tank1.ControlBody.SetAngle(tank1.Body.Angle() + turnSpeed)
+		// by applying to the body too, it will allow getting unstuck from corners
+		tank1.Body.SetAngle(tank1.Body.Angle() + turnSpeed)
 	}
 	if Tanklets.Keys[glfw.KeyA] {
 		tank1.ControlBody.SetAngle(tank1.Body.Angle() - turnSpeed)
+		// by applying to the body too, it will allow getting unstuck from corners
+		tank1.Body.SetAngle(tank1.Body.Angle() - turnSpeed)
 	}
 	if Tanklets.Keys[glfw.KeyW] {
 		tank1.ControlBody.SetVelocityVector(tank1.Body.Rotation().Rotate(cp.Vector{Y: -maxSpeed}))
@@ -87,16 +105,36 @@ func (g *Game) ProcessInput(dt float64) {
 	} else {
 		tank1.ControlBody.SetVelocity(0, 0)
 	}
+
+	if LeftClick && time.Now().Sub(tank1.LastShot) > shotCooldown {
+		tank1.Shoot(g.space)
+		tank1.LastShot = time.Now()
+	}
 }
 
 func (g *Game) Update(dt float64) {
+	tank1.Update()
+
+	for i := 0; i < len(Bullets); {
+		now := time.Now()
+		if now.Sub(Bullets[i].firedAt) > bulletTTL {
+			Bullets = append(Bullets[:i], Bullets[i+1:]...)
+		} else {
+			break
+		}
+	}
+
 	g.space.Step(dt)
+	RightDown = false
+	LeftDown = false
 }
 
 func (g *Game) Render() {
 	tank1.Draw(g.renderer)
-
-	//g.text.Print(fmt.Sprint("Tanklets! ", tank1.Angle()), 20, 30, 1)
+	for _, bullet := range Bullets {
+		bullet.Draw(g.renderer)
+	}
+	g.text.Print(fmt.Sprint(tank1.Position()), 20, 30, 1)
 
 	//g.simple.Draw(float32(pos.X), float32(pos.Y), float32(tank1.width), float32(tank1.height), float32(tank1.Angle()), 0, 0, 0, .5)
 }

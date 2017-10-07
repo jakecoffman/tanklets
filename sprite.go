@@ -25,7 +25,7 @@ var (
 
 func (s *SpriteRenderer) DrawSprite(texture *Texture2D, position, size mgl32.Vec2, rotate float64, color mgl32.Vec3) {
 	s.shader.Use()
-	model := mgl32.Translate3D(position.X(), position.Y(), 0)
+	model := mgl32.Translate3D(position.X()-0.5*size.X(), position.Y()-0.5*size.Y(), 0)
 
 	model = model.Mul4(mgl32.Translate3D(0.5*size.X(), 0.5*size.Y(), 0))
 	model = model.Mul4(mgl32.HomogRotate3D(float32(rotate), mgl32.Vec3{0, 0, 1}))

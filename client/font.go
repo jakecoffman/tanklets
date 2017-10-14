@@ -1,4 +1,4 @@
-package tanklets
+package client
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"

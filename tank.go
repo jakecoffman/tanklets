@@ -1,6 +1,7 @@
 package tanklets
 
 import (
+	"net"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -8,65 +9,70 @@ import (
 )
 
 const (
-	turretw = 4
-	turreth = 15
+	TurretWidth  = 4
+	TurretHeight = 15
 
-	turnSpeed = .05
-	maxSpeed  = 60
+	TurnSpeed = .05
+	MaxSpeed  = 60
 
-	shotCooldown = 250 * time.Millisecond
+	ShotCooldown = 250 * time.Millisecond
 )
 
 type Tank struct {
+	// network
+	ID   PlayerID
+	Addr *net.UDPAddr
+
+	// physics
 	Turret
 	*cp.Body
 	*cp.Shape
-
-	tankTexture, turretTexture, bulletTexture *Texture2D
+	ControlBody *cp.Body
 
 	width, height float64
-	color         mgl32.Vec3
+	Color         mgl32.Vec3
 
-	ControlBody *cp.Body
-	LastShot    time.Time
+	LastShot time.Time
 }
 
 type Turret struct {
 	*cp.Body
 	*cp.Shape
+
+	width, height float32
 }
 
-func NewTank(space *cp.Space, tankTex, turretTex, bulletTex *Texture2D, w, h int) Tank {
-	width := float64(w)
-	height := float64(h)
-	tank := Tank{
-		width:         width,
-		height:        height,
-		tankTexture:   tankTex,
-		turretTexture: turretTex,
-		bulletTexture: bulletTex,
+const (
+	tankWidth  = 20
+	tankHeight = 30
+)
+
+func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
+	tank := &Tank{
+		ID: id,
+		Color: color,
 	}
-	tank.ControlBody = space.AddBody(cp.NewKinematicBody())
-	tank.Body = space.AddBody(cp.NewBody(1, cp.MomentForBox(1, width, height)))
-	tankShape := space.AddShape(cp.NewBox(tank.Body, width, height, 2))
+	tank.ControlBody = Space.AddBody(cp.NewKinematicBody())
+	tank.Body = Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, tankWidth, tankHeight)))
+	tankShape := Space.AddShape(cp.NewBox(tank.Body, tankWidth, tankHeight, 2))
 	tankShape.SetElasticity(0)
 	tankShape.SetFriction(0)
-	tankShape.SetFilter(cp.NewShapeFilter(1, cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
+	tankShape.SetFilter(cp.NewShapeFilter(uint(id), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
 
-	pivot := space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
+	pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
 	pivot.SetMaxBias(0)
 	pivot.SetMaxForce(10000)
 
-	gear := space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
+	gear := Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
 	gear.SetErrorBias(0) // attempt to fully correct the joint each step
 	gear.SetMaxBias(5)
 	gear.SetMaxForce(50000)
 
-	tank.Turret.Body = space.AddBody(cp.NewKinematicBody())
-	tank.Turret.Shape = space.AddShape(cp.NewSegment(tank.Turret.Body, cp.Vector{0, 0}, cp.Vector{turreth, 0}, turretw))
-	tank.Turret.Shape.SetFilter(cp.NewShapeFilter(1, cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
-	circlePart := space.AddShape(cp.NewCircle(tank.Turret.Body, 10, cp.Vector{}))
-	circlePart.SetFilter(cp.NewShapeFilter(1, cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
+	tank.Turret.Body = Space.AddBody(cp.NewKinematicBody())
+	tank.Turret.Shape = Space.AddShape(cp.NewSegment(tank.Turret.Body, cp.Vector{0, 0}, cp.Vector{TurretHeight, 0}, TurretWidth))
+	tank.Turret.Shape.SetFilter(cp.NewShapeFilter(uint(id), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
+	circlePart := Space.AddShape(cp.NewCircle(tank.Turret.Body, 10, cp.Vector{}))
+	circlePart.SetFilter(cp.NewShapeFilter(uint(id), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
 
 	return tank
 }
@@ -76,31 +82,12 @@ func (tank *Tank) Update() {
 
 	// update turret
 	tank.Turret.SetPosition(tank.Body.Position())
-	mouseDelta := Mouse.Sub(tank.Turret.Body.Position())
-	turn := tank.Turret.Rotation().Unrotate(mouseDelta).ToAngle()
-	tank.Turret.SetAngle(tank.Turret.Angle() - turn)
-}
-
-func (tank *Tank) Draw(renderer *SpriteRenderer) {
-	pos := tank.Position()
-	x, y := float32(pos.X), float32(pos.Y)
-	renderer.DrawSprite(tank.tankTexture, mgl32.Vec2{x, y}, tank.Size(), tank1.Angle(), tank.color)
-
-	renderer.DrawSprite(tank.turretTexture, mgl32.Vec2{x, y}, tank.Turret.Size(), tank1.Turret.Angle(), tank.color)
-}
-
-func (tank *Tank) Size() mgl32.Vec2 {
-	return mgl32.Vec2{float32(tank1.width), float32(tank1.height)}
-}
-
-func (turret *Turret) Size() mgl32.Vec2 {
-	return mgl32.Vec2{float32(tank1.height), float32(tank1.height)}
 }
 
 func (tank *Tank) Shoot(space *cp.Space) {
-	bullet := NewBullet(tank.color, tank.bulletTexture)
+	bullet := NewBullet(tank.Color)
 
-	pos := cp.Vector{X: float64(tank.Turret.Size().Y()/2)}
+	pos := cp.Vector{X: tankHeight / 2.0}
 	pos = pos.Rotate(tank.Turret.Rotation())
 	bullet.Body.SetPosition(pos.Add(tank.Turret.Position()))
 	bullet.Body.SetAngle(tank.Turret.Angle())
@@ -109,4 +96,19 @@ func (tank *Tank) Shoot(space *cp.Space) {
 
 	space.AddBody(bullet.Body)
 	space.AddShape(bullet.Shape)
+}
+
+// gather important data to transmit
+func (tank *Tank) Location() *Location {
+	return &Location{
+		ID:              tank.ID,
+		X:               tank.Body.Position().X,
+		Y:               tank.Body.Position().Y,
+		Angle:           tank.Body.Angle(),
+		AngularVelocity: tank.Body.AngularVelocity(),
+		Vx:              tank.Body.Velocity().X,
+		Vy:              tank.Body.Velocity().Y,
+
+		Turret: tank.Turret.Angle(),
+	}
 }

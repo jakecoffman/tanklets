@@ -20,16 +20,14 @@ type Bullet struct {
 
 	firedAt time.Time
 
-	texture *Texture2D
-	color   mgl32.Vec3
+	Color mgl32.Vec3
 }
 
-func NewBullet(color mgl32.Vec3, texture *Texture2D) *Bullet {
+func NewBullet(color mgl32.Vec3) *Bullet {
 	bullet := &Bullet{}
 	bullet.Body = cp.NewKinematicBody()
 	bullet.Shape = cp.NewCircle(bullet.Body, 5, cp.Vector{})
-	bullet.color = color
-	bullet.texture = texture
+	bullet.Color = color
 	bullet.firedAt = time.Now()
 
 	Bullets = append(Bullets, bullet)
@@ -38,13 +36,6 @@ func NewBullet(color mgl32.Vec3, texture *Texture2D) *Bullet {
 }
 
 func (bullet *Bullet) Update() {
-
-}
-
-func (bullet *Bullet) Draw(renderer *SpriteRenderer) {
-	pos := bullet.Body.Position()
-	x, y := float32(pos.X), float32(pos.Y)
-	renderer.DrawSprite(bullet.texture, mgl32.Vec2{x, y}, bullet.Size(), bullet.Body.Angle(), bullet.color)
 }
 
 func (bullet *Bullet) Size() mgl32.Vec2 {

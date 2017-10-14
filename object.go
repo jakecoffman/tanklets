@@ -12,8 +12,6 @@ type Object struct {
 	Rotation                 float64
 
 	IsSolid, Destroyed bool
-
-	Sprite *Texture2D
 }
 
 func (o Object) String() string {
@@ -24,7 +22,7 @@ var (
 	DefaultGameObjectColor = mgl32.Vec3{1, 1, 1}
 )
 
-func NewGameObject(pos, size mgl32.Vec2, sprite *Texture2D) *Object {
+func NewGameObject(pos, size mgl32.Vec2) *Object {
 	return &Object{
 		pos,
 		size,
@@ -33,10 +31,5 @@ func NewGameObject(pos, size mgl32.Vec2, sprite *Texture2D) *Object {
 		0,
 		false,
 		false,
-		sprite,
 	}
-}
-
-func (g *Object) Draw(renderer *SpriteRenderer) {
-	renderer.DrawSprite(g.Sprite, g.Position, g.Size, g.Rotation, g.Color)
 }

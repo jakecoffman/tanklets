@@ -1,9 +1,9 @@
-package tanklets
+package client
 
 import (
 	"os"
 	"io/ioutil"
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/gl/v3.2-core/gl"
 )
 
 // Singleton
@@ -47,15 +47,15 @@ func (r *resourceManager) Shader(name string) *Shader {
 	return shader
 }
 
-func (r *resourceManager) LoadTexture(file string, name string) (*Texture2D, error) {
+func (r *resourceManager) LoadTexture(file string, name string) *Texture2D {
 	texture := NewTexture()
 	f, err := os.Open(file)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	texture.Generate(f)
 	r.textures[name] = texture
-	return texture, nil
+	return texture
 }
 
 func (r *resourceManager) Texture(name string) *Texture2D {

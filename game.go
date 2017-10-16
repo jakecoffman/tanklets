@@ -6,7 +6,7 @@ import (
 	"github.com/jakecoffman/cp"
 )
 
-type PlayerID uint8
+type PlayerID uint16
 
 var (
 	Me    PlayerID

@@ -1,6 +1,7 @@
 package tanklets
 
 import (
+	"encoding/binary"
 	"log"
 	"math/rand"
 	"net"
@@ -12,8 +13,9 @@ import (
 var curId PlayerID = 1
 
 type Join struct {
-	ID  PlayerID
-	You bool
+	ID    PlayerID
+	You   bool
+	Color mgl32.Vec3
 }
 
 var colors = []mgl32.Vec3{
@@ -30,17 +32,17 @@ var colorCursor int
 
 func (j *Join) Handle(addr *net.UDPAddr) error {
 	var player *Tank
-	colorCursor++
 
 	if IsServer {
 		// player initialization (TODO set spawn point)
 		player = NewTank(curId, colors[colorCursor])
+		colorCursor++
 		player.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
 		player.Addr = addr
 		curId++
 		Lookup[addr.String()] = player.ID
 		// tell this player their ID
-		b, err := (&Join{ID: player.ID, You: true}).MarshalBinary()
+		b, err := (&Join{player.ID, true, player.Color}).MarshalBinary()
 		if err != nil {
 			log.Println(err)
 			return err
@@ -53,7 +55,7 @@ func (j *Join) Handle(addr *net.UDPAddr) error {
 		}
 		// tell this player where they are
 		Send(loc, addr)
-		joinBytes, err := Join{player.ID, false}.MarshalBinary()
+		joinBytes, err := Join{player.ID, false, player.Color}.MarshalBinary()
 		if err != nil {
 			log.Println(err)
 			return err
@@ -63,7 +65,7 @@ func (j *Join) Handle(addr *net.UDPAddr) error {
 			Send(joinBytes, p.Addr)
 			Send(loc, p.Addr)
 			// tell this player where all the existing players are
-			b, err = (&Join{p.ID, false}).MarshalBinary()
+			b, err = (&Join{p.ID, false, p.Color}).MarshalBinary()
 			if err != nil {
 				log.Println(err)
 				continue
@@ -78,7 +80,7 @@ func (j *Join) Handle(addr *net.UDPAddr) error {
 		}
 	} else {
 		log.Println("Player joined")
-		player = NewTank(j.ID, colors[colorCursor])
+		player = NewTank(j.ID, j.Color)
 		if j.You {
 			log.Println("Oh, it's me!")
 			Me = player.ID
@@ -94,19 +96,24 @@ func (j *Join) Handle(addr *net.UDPAddr) error {
 }
 
 func (j Join) MarshalBinary() ([]byte, error) {
+	buf := make([]byte, 16)
+	binary.BigEndian.PutUint16(buf[0:2], uint16(j.ID))
 	if j.You {
-		return []byte{JOIN, byte(j.ID), 1}, nil
+		binary.BigEndian.PutUint16(buf[2:4], uint16(1))
 	} else {
-		return []byte{JOIN, byte(j.ID), 0}, nil
+		binary.BigEndian.PutUint16(buf[2:4], uint16(0))
 	}
+	binary.BigEndian.PutUint32(buf[4:8], uint32(j.Color.X()))
+	binary.BigEndian.PutUint32(buf[8:12], uint32(j.Color.Y()))
+	binary.BigEndian.PutUint32(buf[12:16], uint32(j.Color.Z()))
+	return buf, nil
 }
 
-func (j *Join) UnmarshalBinary(b []byte) error {
-	j.ID = PlayerID(b[1])
-	if b[2] == 0 {
-		j.You = false
-	} else {
-		j.You = true
-	}
+func (j *Join) UnmarshalBinary(buf []byte) error {
+	j.ID = PlayerID(binary.BigEndian.Uint16(buf[0:2]))
+	j.You = binary.BigEndian.Uint16(buf[2:4]) == 1
+	j.Color[0] = float32(binary.BigEndian.Uint32(buf[4:8]))
+	j.Color[1] = float32(binary.BigEndian.Uint32(buf[8:12]))
+	j.Color[2] = float32(binary.BigEndian.Uint32(buf[12:16]))
 	return nil
 }

@@ -41,8 +41,8 @@ func init() {
 		Port: 1234,
 		IP:   net.ParseIP("127.0.0.1"),
 	}
-	Incomings = make(chan Incoming, 100)
-	Outgoings = make(chan Outgoing, 100)
+	Incomings = make(chan Incoming, 1000)
+	Outgoings = make(chan Outgoing, 1000)
 }
 
 func NetInit() {

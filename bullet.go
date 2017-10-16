@@ -26,7 +26,8 @@ type Bullet struct {
 func NewBullet(color mgl32.Vec3) *Bullet {
 	bullet := &Bullet{}
 	bullet.Body = cp.NewKinematicBody()
-	bullet.Shape = cp.NewCircle(bullet.Body, 5, cp.Vector{})
+	bullet.Shape = bullet.Body.AddShape(cp.NewCircle(bullet.Body, 5, cp.Vector{}))
+	//bullet.Shape.SetSensor(true)
 	bullet.Color = color
 	bullet.firedAt = time.Now()
 

@@ -28,8 +28,10 @@ func (l *Location) Handle(addr *net.UDPAddr) error {
 		log.Println("Player with ID", l.ID, "not found")
 		return nil
 	}
-	// TODO: check if the change is insignificant and ignore it if that's the case
-	player.Body.SetPosition(cp.Vector{l.X, l.Y})
+	// ignore if the change is insignificant
+	if player.Body.Position().Sub(cp.Vector{l.X, l.Y}).LengthSq() > 4 {
+		player.Body.SetPosition(cp.Vector{l.X, l.Y})
+	}
 	player.Body.SetVelocity(l.Vx, l.Vy)
 	player.Body.SetAngle(l.Angle)
 	player.Body.SetAngularVelocity(l.AngularVelocity)

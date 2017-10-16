@@ -25,6 +25,8 @@ func main() {
 
 	update := time.Tick(serverUpdateRate)
 
+	log.Println("Server Running")
+
 	for {
 		select {
 		case <-tick:

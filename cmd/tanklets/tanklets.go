@@ -71,14 +71,9 @@ func main() {
 	tanklets.NetInit()
 	defer func() { log.Println(tanklets.NetClose()) }()
 
-	join := &tanklets.Join{}
 	log.Println("Sending JOIN command")
-
-	b, err := join.MarshalBinary()
-	if err != nil {
-		log.Fatal(err)
-	}
-	tanklets.Send(b, tanklets.ServerAddr)
+	tanklets.Send(tanklets.Join{}, tanklets.ServerAddr)
+	defer tanklets.Send(tanklets.Disconnect{}, tanklets.ServerAddr)
 
 	deltaTime := 0.
 	lastFrame := 0.
@@ -130,4 +125,3 @@ func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Ac
 func framebufferSizeCallback(w *glfw.Window, width int, height int) {
 	gl.Viewport(0, 0, int32(width), int32(height))
 }
-

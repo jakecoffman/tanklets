@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 
+	"log"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
 )
@@ -33,6 +35,8 @@ type Tank struct {
 	Color         mgl32.Vec3
 
 	LastShot time.Time
+
+	Destroyed bool
 }
 
 type Turret struct {
@@ -49,7 +53,7 @@ const (
 
 func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tank := &Tank{
-		ID: id,
+		ID:    id,
 		Color: color,
 	}
 	tank.ControlBody = Space.AddBody(cp.NewKinematicBody())
@@ -57,22 +61,23 @@ func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tankShape := Space.AddShape(cp.NewBox(tank.Body, tankWidth, tankHeight, 2))
 	tankShape.SetElasticity(0)
 	tankShape.SetFriction(0)
-	tankShape.SetFilter(cp.NewShapeFilter(uint(id), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
+	tankShape.SetFilter(cp.NewShapeFilter(uint(id), PLAYER_MASK_BIT, PLAYER_MASK_BIT))
+	tankShape.UserData = tank
 
 	pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
 	pivot.SetMaxBias(0)
 	pivot.SetMaxForce(10000)
 
 	gear := Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
-	gear.SetErrorBias(0) // attempt to fully correct the joint each step
+	//gear.SetErrorBias(0) // attempt to fully correct the joint each step
 	gear.SetMaxBias(5)
 	gear.SetMaxForce(50000)
 
 	tank.Turret.Body = Space.AddBody(cp.NewKinematicBody())
 	tank.Turret.Shape = Space.AddShape(cp.NewSegment(tank.Turret.Body, cp.Vector{0, 0}, cp.Vector{TurretHeight, 0}, TurretWidth))
-	tank.Turret.Shape.SetFilter(cp.NewShapeFilter(uint(id), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
+	tank.Turret.Shape.SetFilter(cp.NewShapeFilter(uint(id), ^cp.ALL_CATEGORIES, ^cp.ALL_CATEGORIES))
 	circlePart := Space.AddShape(cp.NewCircle(tank.Turret.Body, 10, cp.Vector{}))
-	circlePart.SetFilter(cp.NewShapeFilter(uint(id), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
+	circlePart.SetFilter(cp.NewShapeFilter(uint(id), ^cp.ALL_CATEGORIES, ^cp.ALL_CATEGORIES))
 
 	return tank
 }
@@ -85,17 +90,7 @@ func (tank *Tank) Update() {
 }
 
 func (tank *Tank) Shoot(space *cp.Space) {
-	bullet := NewBullet(tank.Color)
-
-	pos := cp.Vector{X: tankHeight / 2.0}
-	pos = pos.Rotate(tank.Turret.Rotation())
-	bullet.Body.SetPosition(pos.Add(tank.Turret.Position()))
-	bullet.Body.SetAngle(tank.Turret.Angle())
-	bullet.Body.SetVelocityVector(bullet.Body.Rotation().Rotate(cp.Vector{bulletSpeed, 0}))
-	bullet.Shape.SetFilter(cp.NewShapeFilter(1, cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
-
-	space.AddBody(bullet.Body)
-	space.AddShape(bullet.Shape)
+	Send(Shoot{}, ServerAddr)
 }
 
 // gather important data to transmit
@@ -110,5 +105,24 @@ func (tank *Tank) Location() *Location {
 		Vy:              tank.Body.Velocity().Y,
 
 		Turret: tank.Turret.Angle(),
+	}
+}
+
+func (tank *Tank) Damage(bullet *Bullet) {
+	if !IsServer {
+		log.Println("I shouldn't be here...")
+		return
+	}
+
+	if tank.Destroyed {
+		return
+	}
+
+	tank.Destroyed = true
+
+	log.Println("Tank", tank.ID, "destroyed by Tank", bullet.Tank.ID)
+
+	for _, p := range Tanks {
+		Send(Damage{tank.ID}, p.Addr)
 	}
 }

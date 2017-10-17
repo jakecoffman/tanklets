@@ -1,7 +1,6 @@
 package client
 
 import (
-	"log"
 	"time"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -10,14 +9,14 @@ import (
 )
 
 var (
-	Player *tanklets.Tank
-	Keys          = [1024]bool{}
+	Player                                     *tanklets.Tank
+	Keys                                       = [1024]bool{}
 	Mouse                                      cp.Vector
 	LeftDown, RightDown, LeftClick, RightClick bool
 )
 
 func ProcessInput(dt float64) {
-	if tanklets.State != tanklets.GAME_ACTIVE {
+	if tanklets.State != tanklets.GAME_PLAYING {
 		return
 	}
 
@@ -62,12 +61,8 @@ func ProcessInput(dt float64) {
 	Player.Turret.SetAngle(Player.Turret.Angle() - turretTurn)
 
 	// send all of this input to the server
-	bin, err := (&tanklets.Move{Turn: turn, Throttle: throttle, Turret: turretTurn}).MarshalBinary()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	tanklets.Send(bin, tanklets.ServerAddr)
+	move := tanklets.Move{Turn: turn, Throttle: throttle, Turret: turretTurn}
+	tanklets.Send(move, tanklets.ServerAddr)
 
 	RightDown = false
 	LeftDown = false

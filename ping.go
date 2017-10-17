@@ -40,12 +40,7 @@ func (p *Ping) Handle(addr *net.UDPAddr) error {
 		// got a ping
 		// TODO store pings for players to show on server status
 		//player := Players[Lookup[Addr.String()]]
-		bin, err := p.MarshalBinary()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		Send(bin, addr)
+		Send(p, addr)
 	} else {
 		// got a pong
 		d := time.Since(p.Sent)
@@ -54,7 +49,7 @@ func (p *Ping) Handle(addr *net.UDPAddr) error {
 	return nil
 }
 
-func (p *Ping) MarshalBinary() ([]byte, error) {
+func (p Ping) MarshalBinary() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{PING})
 	return Marshal([]interface{}{p.Sent.UnixNano()}, buf)
 }
@@ -88,11 +83,5 @@ func PingRegularly() {
 }
 
 func PingNow() {
-	ping := &Ping{Sent: time.Now()}
-	bin, err := ping.MarshalBinary()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	Send(bin, ServerAddr)
+	Send(Ping{Sent: time.Now()}, ServerAddr)
 }

@@ -14,7 +14,7 @@ var (
 	// Server only lookup of Addr to ID
 	Lookup = map[string]PlayerID{}
 
-	Space *cp.Space = cp.NewSpace()
+	Space *cp.Space
 
 	State int
 
@@ -26,11 +26,29 @@ var (
 
 // Game state
 const (
-	GAME_START = iota
-	GAME_ACTIVE
-	GAME_MENU
-	GAME_WIN
+	GAME_WAITING = iota
+	GAME_PLAYING
+	GAME_DEAD
 )
+
+// Collision types
+const (
+	COLLISION_TYPE_BULLET = 1
+)
+
+// Collision categories
+const (
+	_ = iota
+)
+
+var PLAYER_MASK_BIT uint = 1 << 31
+
+var PlayerFilter cp.ShapeFilter = cp.ShapeFilter{
+	cp.NO_GROUP, PLAYER_MASK_BIT, PLAYER_MASK_BIT,
+}
+var NotPlayerFilter cp.ShapeFilter = cp.ShapeFilter{
+	cp.NO_GROUP, ^PLAYER_MASK_BIT, ^PLAYER_MASK_BIT,
+}
 
 func NewGame(width, height float64) {
 	// physics
@@ -48,8 +66,11 @@ func NewGame(width, height float64) {
 		seg = space.AddShape(cp.NewSegment(space.StaticBody, sides[i], sides[i+1], 0))
 		seg.SetElasticity(1)
 		seg.SetFriction(1)
-		//seg.SetFilter(examples.NotGrabbableFilter)
+		seg.SetFilter(PlayerFilter)
 	}
+
+	handler := space.NewWildcardCollisionHandler(COLLISION_TYPE_BULLET)
+	handler.PreSolveFunc = BulletPreSolve
 
 	Width = int(width)
 	Height = int(height)
@@ -64,6 +85,7 @@ func Update(dt float64) {
 	now := time.Now()
 	for i := 0; i < len(Bullets); {
 		if now.Sub(Bullets[i].firedAt) > bulletTTL {
+			Bullets[i].Destroy()
 			Bullets = append(Bullets[:i], Bullets[i+1:]...)
 		} else {
 			break

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -23,6 +24,8 @@ func main() {
 		return
 	}
 	go copyC(wg, stderr)
+
+	time.Sleep(1*time.Second)
 
 	game1Cmd := exec.Command("go", "run", "cmd/tanklets/tanklets.go")
 	stderr2, err := game1Cmd.StderrPipe()

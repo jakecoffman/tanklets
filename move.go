@@ -40,11 +40,7 @@ func (m *Move) Handle(addr *net.UDPAddr) error {
 	player.Turret.SetAngle(player.Turret.Angle() - m.Turret)
 
 	// Send immediate location update to everyone
-	location, err := player.Location().MarshalBinary()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
+	location := player.Location()
 	for _, p := range Tanks {
 		Send(location, p.Addr)
 	}
@@ -52,7 +48,7 @@ func (m *Move) Handle(addr *net.UDPAddr) error {
 	return nil
 }
 
-func (m *Move) MarshalBinary() ([]byte, error) {
+func (m Move) MarshalBinary() ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{MOVE})
 	fields := []interface{}{&m.Turn, &m.Throttle, &m.Turret}
 	return Marshal(fields, buf)

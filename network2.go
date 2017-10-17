@@ -14,8 +14,11 @@ const SimulatedNetworkLatencyMS = 100
 // Message type IDs
 const (
 	JOIN = iota
+	DISCONNECT
 	MOVE
+	SHOOT
 	LOCATION
+	DAMAGE
 	PING
 )
 
@@ -101,10 +104,16 @@ func Recv() {
 		switch data[0] {
 		case JOIN:
 			handler = &Join{}
+		case DISCONNECT:
+			handler = &Disconnect{}
 		case MOVE:
 			handler = &Move{}
+		case SHOOT:
+			handler = &Shoot{}
 		case LOCATION:
 			handler = &Location{}
+		case DAMAGE:
+			handler = &Damage{}
 		case PING:
 			handler = &Ping{}
 			// just handle the ping here immediately outside of the game loop
@@ -129,6 +138,9 @@ func Recv() {
 		select {
 		case Incomings <- Incoming{handler, addr}:
 		default:
+			// the idea here is the first message is probably out of date, so drop that one
+			<-Incomings
+			Incomings <- Incoming{handler, addr}
 			log.Println("Error: queue is full, dropping message")
 		}
 		//}()
@@ -152,7 +164,13 @@ func ProcessIncoming() {
 }
 
 // Send queues up an outgoing byte array to be sent immediately so sending isn't blocking
-func Send(data []byte, addr *net.UDPAddr) {
+func Send(handler encoding.BinaryMarshaler, addr *net.UDPAddr) {
+	data, err := handler.MarshalBinary()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
 	//go func() {
 	//	time.Sleep(SimulatedNetworkLatencyMS / 2 * time.Millisecond)
 	Outgoings <- Outgoing{data: data, addr: addr}

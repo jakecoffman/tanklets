@@ -21,12 +21,14 @@ func (d *Disconnect) Handle(addr *net.UDPAddr) error {
 			return nil
 		}
 
-		delete(Players, Lookup[addr.String()])
+		delete(Players, playerID)
 		delete(Lookup, addr.String())
+		Tanks[playerID].Destroyed = true
 
-		// tell others they left
+		// tell others they left & destroyed
 		for _, p := range Players {
 			Send(Disconnect{ID: playerID}, p)
+			Send(Damage{ID: playerID}, p)
 		}
 	} else {
 		log.Println("Client:", Me, "--", d.ID, "Has disonnceted")

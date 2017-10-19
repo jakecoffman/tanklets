@@ -2,6 +2,7 @@ package tanklets
 
 import (
 	"encoding/binary"
+	"log"
 	"net"
 )
 
@@ -11,6 +12,10 @@ type Damage struct {
 
 func (d *Damage) Handle(addr *net.UDPAddr) error {
 	tank := Tanks[d.ID]
+	if tank == nil {
+		log.Println("Tank", d.ID, "not found")
+		return nil
+	}
 	tank.Destroyed = true
 
 	if d.ID == Me {

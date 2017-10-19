@@ -14,22 +14,22 @@ func (d *Disconnect) Handle(addr *net.UDPAddr) error {
 	if IsServer {
 		log.Println("SERVER:", d.ID, "Has disonnceted")
 
-		var player *Tank = Tanks[Lookup[addr.String()]]
+		playerID := Lookup[addr.String()]
+		var player *net.UDPAddr = Players[playerID]
 		if player == nil {
 			log.Println("Player not found", addr.String(), Lookup[addr.String()])
 			return nil
 		}
 
-		delete(Tanks, Lookup[addr.String()])
+		delete(Players, Lookup[addr.String()])
 		delete(Lookup, addr.String())
 
 		// tell others they left
-		for _, p := range Tanks {
-			Send(Disconnect{ID: player.ID}, p.Addr)
+		for _, p := range Players {
+			Send(Disconnect{ID: playerID}, p)
 		}
 	} else {
 		log.Println("Client:", Me, "--", d.ID, "Has disonnceted")
-		delete(Tanks, d.ID)
 	}
 
 	return nil

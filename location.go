@@ -33,8 +33,11 @@ func (l *Location) Handle(addr *net.UDPAddr) error {
 		player.Body.SetPosition(cp.Vector{l.X, l.Y})
 	}
 	player.Body.SetVelocity(l.Vx, l.Vy)
+	player.ControlBody.SetVelocity(l.Vx, l.Vy)
 	player.Body.SetAngle(l.Angle)
+	player.ControlBody.SetAngle(l.Angle)
 	player.Body.SetAngularVelocity(l.AngularVelocity)
+	player.ControlBody.SetAngularVelocity(l.AngularVelocity)
 	player.Turret.Body.SetAngle(l.Turret)
 	return nil
 }

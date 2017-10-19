@@ -22,8 +22,6 @@ var (
 )
 
 func Init(width, height float32) {
-	tanklets.IsClient = true
-
 	// shaders
 	ResourceManager.LoadShader("shaders/main.vs.glsl", "shaders/main.fs.glsl", "sprite")
 	ResourceManager.LoadShader("shaders/simple.vs.glsl", "shaders/simple.fs.glsl", "simple")
@@ -58,6 +56,6 @@ func Render() {
 		Text.Print("Connecting", 50, 100, 1)
 	}
 	if tanklets.State == tanklets.GAME_DEAD {
-		Text.Print("You died", 50, 700, 1)
+		Text.Print("You died", 50, 50, 1)
 	}
 }

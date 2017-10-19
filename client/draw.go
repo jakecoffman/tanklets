@@ -5,11 +5,6 @@ import (
 	"github.com/jakecoffman/tanklets"
 )
 
-const (
-	tankWidth  = 20
-	tankHeight = 30
-)
-
 func DrawTank(tank *tanklets.Tank) {
 	pos := tank.Position()
 	x, y := float32(pos.X), float32(pos.Y)
@@ -19,8 +14,8 @@ func DrawTank(tank *tanklets.Tank) {
 		color = mgl32.Vec3{0.2, 0.2, 0.2}
 	}
 
-	Renderer.DrawSprite(tankTexture, mgl32.Vec2{x, y}, mgl32.Vec2{tankWidth, tankHeight}, tank.Angle(), color)
-	Renderer.DrawSprite(turretTexture, mgl32.Vec2{x, y}, mgl32.Vec2{tankHeight, tankHeight}, tank.Turret.Angle(), color)
+	Renderer.DrawSprite(tankTexture, mgl32.Vec2{x, y}, mgl32.Vec2{tanklets.TankWidth, tanklets.TankHeight}, tank.Angle(), color)
+	Renderer.DrawSprite(turretTexture, mgl32.Vec2{x, y}, mgl32.Vec2{tanklets.TankHeight, tanklets.TankHeight}, tank.Turret.Angle(), color)
 }
 
 func DrawBullet(bullet *tanklets.Bullet) {

@@ -28,10 +28,11 @@ func (s *Shoot) Handle(addr *net.UDPAddr) error {
 		if time.Now().Sub(player.LastShot) < ShotCooldown {
 			return nil
 		}
+		player.LastShot = time.Now()
 
 		bullet := NewBullet(player)
 
-		pos := cp.Vector{X: tankHeight / 2.0}
+		pos := cp.Vector{X: TankHeight / 2.0}
 		pos = pos.Rotate(player.Turret.Rotation())
 		bullet.Body.SetPosition(pos.Add(player.Turret.Position()))
 		bullet.Body.SetAngle(player.Turret.Angle())
@@ -47,8 +48,8 @@ func (s *Shoot) Handle(addr *net.UDPAddr) error {
 			Velocity: bullet.Body.Velocity(),
 			Angle:    bullet.Body.Angle(),
 		}
-		for _, p := range Tanks {
-			Send(shot, p.Addr)
+		for _, p := range Players {
+			Send(shot, p)
 		}
 	} else {
 		player := Tanks[s.ID]

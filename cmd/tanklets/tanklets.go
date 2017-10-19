@@ -10,6 +10,8 @@ import (
 
 	"os"
 
+	"strconv"
+
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/jakecoffman/tanklets"
@@ -51,16 +53,26 @@ func main() {
 		panic(err)
 	}
 	defer window.Destroy()
+	if len(os.Args) > 1 {
+		y, err := strconv.Atoi(os.Args[1])
+		if err != nil {
+			log.Println(err)
+		} else {
+			window.SetPos(0, y)
+		}
+	} else {
+		window.SetPos(0, 0)
+	}
 	window.MakeContextCurrent()
 	window.SetKeyCallback(keyCallback)
 	window.SetFramebufferSizeCallback(framebufferSizeCallback)
 	window.SetCursorPosCallback(client.CursorCallback)
 	window.SetMouseButtonCallback(client.MouseButtonCallback)
+	glfw.SwapInterval(1)
 
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
-
 	gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)

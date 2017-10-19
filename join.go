@@ -31,43 +31,43 @@ var colors = []mgl32.Vec3{
 var colorCursor int
 
 func (j *Join) Handle(addr *net.UDPAddr) error {
-	var player *Tank
+	var tank *Tank
 
 	if IsServer {
-		// player initialization (TODO set spawn point)
-		player = NewTank(curId, colors[colorCursor])
-		colorCursor++
-		player.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
-		player.Addr = addr
-		curId++
-		Lookup[addr.String()] = player.ID
+		tank = NewTank(curId, colors[colorCursor])
+		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
 		// tell this player their ID
-		Send(Join{player.ID, true, player.Color}, addr)
-		loc := player.Location()
+		Send(Join{tank.ID, true, tank.Color}, addr)
+		loc := tank.Location()
 		// tell this player where they are
 		Send(loc, addr)
-		join := Join{player.ID, false, player.Color}
-		for _, p := range Tanks {
+		join := Join{tank.ID, false, tank.Color}
+		for id, p := range Players {
 			// tell all players about this player
-			Send(join, p.Addr)
-			Send(loc, p.Addr)
+			Send(join, p)
+			Send(loc, p)
 			// tell this player where all the existing players are
-			Send(Join{p.ID, false, p.Color}, player.Addr)
-			Send(p.Location(), player.Addr)
+			thisTank := Tanks[id]
+			Send(Join{id, false, thisTank.Color}, addr)
+			Send(thisTank.Location(), addr)
 		}
+		Lookup[addr.String()] = tank.ID
+		Players[curId] = addr
+		curId++
+		colorCursor++
 	} else {
 		log.Println("Player joined")
-		player = NewTank(j.ID, j.Color)
+		tank = NewTank(j.ID, j.Color)
 		if j.You {
 			log.Println("Oh, it's me!")
-			Me = player.ID
+			Me = tank.ID
 			//Player = player
 			State = GAME_PLAYING
 			// now that I am joined I will start pinging the server
 			go PingRegularly()
 		}
 	}
-	Tanks[player.ID] = player
+	Tanks[tank.ID] = tank
 
 	return nil
 }

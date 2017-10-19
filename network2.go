@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"log"
 	"net"
+	"time"
 )
 
 const SimulatedNetworkLatencyMS = 100
@@ -81,25 +82,44 @@ func NetClose() error {
 	return udpConn.Close()
 }
 
+var incomingTick = time.Tick(1 * time.Second)
+var incomingBytesPerSecond int
+var outgoingTick = time.Tick(1 * time.Second)
+var outgoingBytesPerSecond int
+
 // Recv runs in a goroutine and un-marshals incoming data, queuing it up for ProcessIncoming to handle
 func Recv() {
 	for {
 		data := make([]byte, 2048)
 		var addr *net.UDPAddr
 		var err error
+		var n int
 		if IsServer {
-			_, addr, err = udpConn.ReadFromUDP(data)
+			n, addr, err = udpConn.ReadFromUDP(data)
 			if err != nil {
 				panic(err)
 				return
 			}
 		} else {
-			_, err = bufio.NewReader(udpConn).Read(data)
+			n, err = bufio.NewReader(udpConn).Read(data)
 			if err != nil {
 				log.Println(err)
 				return
 			}
 		}
+		incomingBytesPerSecond += n
+
+		select {
+		case <-incomingTick:
+			if IsServer {
+				log.Println("server in :", Bytes(incomingBytesPerSecond))
+			} else {
+				//log.Println("incoming client bytes:", incomingBytesPerSecond)
+			}
+			incomingBytesPerSecond = 0
+		default:
+		}
+
 		var handler Handler
 		switch data[0] {
 		case JOIN:
@@ -181,21 +201,37 @@ func ProcessOutgoingServer() {
 	var outgoing Outgoing
 	for {
 		outgoing = <-Outgoings
-		_, err := udpConn.WriteToUDP(outgoing.data, outgoing.addr)
+		n, err := udpConn.WriteToUDP(outgoing.data, outgoing.addr)
 		if err != nil {
 			panic(err)
 			return
+		}
+		outgoingBytesPerSecond += n
+		select {
+		case <-outgoingTick:
+			log.Println("server out:", Bytes(outgoingBytesPerSecond))
+			outgoingBytesPerSecond = 0
+		default:
 		}
 	}
 }
 
 func ProcessingOutgoingClient() {
 	var outgoing Outgoing
+	var n int
+	var err error
 	for {
 		outgoing = <-Outgoings
-		_, err := udpConn.Write(outgoing.data)
+		n, err = udpConn.Write(outgoing.data)
 		if err != nil {
 			log.Println(err)
+		}
+		outgoingBytesPerSecond += n
+		select {
+		case <-outgoingTick:
+			//log.Println("outgoing client bytes:", outgoingBytesPerSecond)
+			outgoingBytesPerSecond = 0
+		default:
 		}
 	}
 }

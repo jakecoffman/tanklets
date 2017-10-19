@@ -51,7 +51,7 @@ func ProcessInput(dt float64) {
 		Player.ControlBody.SetVelocity(0, 0)
 	}
 
-	if LeftClick && time.Now().Sub(Player.LastShot) > tanklets.ShotCooldown {
+	if LeftClick {
 		Player.Shoot(tanklets.Space)
 		Player.LastShot = time.Now()
 	}

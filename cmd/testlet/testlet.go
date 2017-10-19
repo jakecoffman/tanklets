@@ -38,7 +38,7 @@ func main() {
 	}
 	go copyC(wg, stderr2)
 
-	game2Cmd := exec.Command("go", "run", "cmd/tanklets/tanklets.go")
+	game2Cmd := exec.Command("go", "run", "cmd/tanklets/tanklets.go", "650")
 	stderr3, err := game2Cmd.StderrPipe()
 	if err != nil {
 		log.Println(err)

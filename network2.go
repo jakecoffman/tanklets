@@ -134,16 +134,6 @@ func Recv() {
 			handler = &Location{}
 		case DAMAGE:
 			handler = &Damage{}
-		case PING:
-			handler = &Ping{}
-			// just handle the ping here immediately outside of the game loop
-			err = handler.UnmarshalBinary(data)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			handler.Handle(addr)
-			continue
 		default:
 			log.Println("Unkown message type", data[0])
 			continue

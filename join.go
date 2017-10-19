@@ -63,8 +63,6 @@ func (j *Join) Handle(addr *net.UDPAddr) error {
 			Me = tank.ID
 			//Player = player
 			State = GAME_PLAYING
-			// now that I am joined I will start pinging the server
-			go PingRegularly()
 		}
 	}
 	Tanks[tank.ID] = tank

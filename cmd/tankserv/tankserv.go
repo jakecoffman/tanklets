@@ -8,10 +8,12 @@ import (
 )
 
 const (
-	step             = 16666666
-	stepDuration     = step * time.Nanosecond
-	serverUpdateRate = 200 * time.Millisecond
+	step         = 16666666
+	stepDuration = step * time.Nanosecond
 )
+
+const updateRate = 2
+var updateCount int
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -22,8 +24,6 @@ func main() {
 
 	tick := time.Tick(stepDuration)
 	var ticks int
-
-	update := time.Tick(serverUpdateRate)
 
 	log.Println("Server Running")
 
@@ -37,12 +37,16 @@ func main() {
 		ticks++
 		tanklets.Update(dt.Seconds())
 
-		select {
-		case <-update:
+		updateCount++
+		if updateCount < updateRate {
+			return
+		}
+		updateCount = 0
+
+		for _, player := range tanklets.Players {
 			for _, tank := range tanklets.Tanks {
-				tanklets.Send(tank.Location(), tank.Addr)
+				tanklets.Send(tank.Location(), player)
 			}
-		default:
 		}
 	}
 

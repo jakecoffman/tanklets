@@ -27,6 +27,11 @@ func (m *Move) Handle(addr *net.UDPAddr) error {
 		return nil
 	}
 
+	if m.Turn > maxTurn {
+		log.Println("Player tried to turn too fast: cheating?", m.Turn)
+		return nil
+	}
+
 	player.ControlBody.SetAngle(player.Body.Angle() + m.Turn)
 	// by applying to the body too, it will allow getting unstuck from corners
 	player.Body.SetAngle(player.Body.Angle() + m.Turn)
@@ -38,12 +43,6 @@ func (m *Move) Handle(addr *net.UDPAddr) error {
 	}
 
 	player.Turret.SetAngle(player.Turret.Angle() - m.Turret)
-
-	// Send immediate location update to everyone
-	location := player.Location()
-	for _, p := range Tanks {
-		Send(location, p.Addr)
-	}
 
 	return nil
 }

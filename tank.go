@@ -1,7 +1,6 @@
 package tanklets
 
 import (
-	"net"
 	"time"
 
 	"log"
@@ -10,7 +9,11 @@ import (
 	"github.com/jakecoffman/cp"
 )
 
+// default tank attributes (power-ups could change them!)
 const (
+	TankWidth  = 20
+	TankHeight = 30
+
 	TurretWidth  = 4
 	TurretHeight = 15
 
@@ -22,8 +25,7 @@ const (
 
 type Tank struct {
 	// network
-	ID   PlayerID
-	Addr *net.UDPAddr
+	ID PlayerID
 
 	// physics
 	Turret
@@ -46,19 +48,14 @@ type Turret struct {
 	width, height float32
 }
 
-const (
-	tankWidth  = 20
-	tankHeight = 30
-)
-
 func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tank := &Tank{
 		ID:    id,
 		Color: color,
 	}
 	tank.ControlBody = Space.AddBody(cp.NewKinematicBody())
-	tank.Body = Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, tankWidth, tankHeight)))
-	tankShape := Space.AddShape(cp.NewBox(tank.Body, tankWidth, tankHeight, 2))
+	tank.Body = Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, TankWidth, TankHeight)))
+	tankShape := Space.AddShape(cp.NewBox(tank.Body, TankWidth, TankHeight, 0))
 	tankShape.SetElasticity(0)
 	tankShape.SetFriction(0)
 	tankShape.SetFilter(cp.NewShapeFilter(uint(id), PLAYER_MASK_BIT, PLAYER_MASK_BIT))
@@ -122,7 +119,7 @@ func (tank *Tank) Damage(bullet *Bullet) {
 
 	log.Println("Tank", tank.ID, "destroyed by Tank", bullet.Tank.ID)
 
-	for _, p := range Tanks {
-		Send(Damage{tank.ID}, p.Addr)
+	for _, p := range Players {
+		Send(Damage{tank.ID}, p)
 	}
 }

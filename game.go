@@ -2,26 +2,25 @@ package tanklets
 
 import (
 	"time"
-
 	"github.com/jakecoffman/cp"
+	"net"
 )
 
 type PlayerID uint16
 
 var (
+	// client only
 	Me    PlayerID
-	Tanks = map[PlayerID]*Tank{}
-	// Server only lookup of Addr to ID
-	Lookup = map[string]PlayerID{}
-
-	Space *cp.Space
-
 	State int
 
-	Width, Height int
+	// server only
+	Players = map[PlayerID]*net.UDPAddr{} // represent players separately for, e.g. disconnects
+	Lookup = map[string]PlayerID{} // look up Addr
 
-	IsClient    bool
-	IsConnected bool
+	// both client and server (TODO: Server needs to sync some of this still)
+	Tanks = map[PlayerID]*Tank{}
+	Space *cp.Space
+	Width, Height int
 )
 
 // Game state

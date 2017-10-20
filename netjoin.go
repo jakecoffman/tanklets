@@ -30,7 +30,7 @@ var colors = []mgl32.Vec3{
 
 var colorCursor int
 
-func (j *Join) Handle(addr *net.UDPAddr) error {
+func (j *Join) Handle(addr *net.UDPAddr) {
 	var tank *Tank
 
 	if IsServer {
@@ -66,8 +66,6 @@ func (j *Join) Handle(addr *net.UDPAddr) error {
 		}
 	}
 	Tanks[tank.ID] = tank
-
-	return nil
 }
 
 func (j Join) MarshalBinary() ([]byte, error) {

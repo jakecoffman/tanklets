@@ -20,7 +20,7 @@ const (
 	TurnSpeed = .05
 	MaxSpeed  = 60
 
-	ShotCooldown = 250 * time.Millisecond
+	ShotCooldown = 333 * time.Millisecond
 )
 
 type Tank struct {
@@ -79,7 +79,7 @@ func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	return tank
 }
 
-func (tank *Tank) Update() {
+func (tank *Tank) Update(dt float64) {
 	// update body
 
 	// update turret
@@ -116,8 +116,12 @@ func (tank *Tank) Damage(bullet *Bullet) {
 	}
 
 	tank.Destroyed = true
+	tank.Body.SetVelocity(0, 0)
+	tank.ControlBody.SetVelocity(0, 0)
+	tank.Body.SetAngularVelocity(0)
+	tank.ControlBody.SetAngularVelocity(0)
 
-	log.Println("Tank", tank.ID, "destroyed by Tank", bullet.Tank.ID)
+	log.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
 
 	for _, p := range Players {
 		Send(Damage{tank.ID}, p)

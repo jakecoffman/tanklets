@@ -5,14 +5,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"sync"
-	"time"
 )
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
 
 	serverCmd := exec.Command("go", "run", "cmd/tankserv/tankserv.go")
 	stderr, err := serverCmd.StderrPipe()
@@ -23,9 +19,9 @@ func main() {
 		log.Println(err)
 		return
 	}
-	go copyC(wg, stderr)
+	go copyC(stderr)
 
-	time.Sleep(1*time.Second)
+	//time.Sleep(1*time.Second)
 
 	game1Cmd := exec.Command("go", "run", "cmd/tanklets/tanklets.go")
 	stderr2, err := game1Cmd.StderrPipe()
@@ -36,7 +32,7 @@ func main() {
 		log.Println(err)
 		return
 	}
-	go copyC(wg, stderr2)
+	go copyC(stderr2)
 
 	game2Cmd := exec.Command("go", "run", "cmd/tanklets/tanklets.go", "650")
 	stderr3, err := game2Cmd.StderrPipe()
@@ -47,15 +43,13 @@ func main() {
 		log.Println(err)
 		return
 	}
-	go copyC(wg, stderr3)
+	go copyC(stderr3)
 
-	wg.Wait()
-	log.Println("here")
-	serverCmd.Process.Kill()
-	game1Cmd.Process.Kill()
+	game1Cmd.Wait()
+	game2Cmd.Wait()
+	serverCmd.Wait()
 }
 
-func copyC(wg sync.WaitGroup, a io.Reader) {
+func copyC(a io.Reader) {
 	io.Copy(os.Stderr, a)
-	wg.Done()
 }

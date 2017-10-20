@@ -10,15 +10,15 @@ type Disconnect struct {
 	ID PlayerID
 }
 
-func (d *Disconnect) Handle(addr *net.UDPAddr) error {
+func (d *Disconnect) Handle(addr *net.UDPAddr) {
 	if IsServer {
-		log.Println("SERVER:", d.ID, "Has disonnceted")
+		log.Println("SERVER: Player", d.ID, "has disonnceted")
 
 		playerID := Lookup[addr.String()]
 		var player *net.UDPAddr = Players[playerID]
 		if player == nil {
 			log.Println("Player not found", addr.String(), Lookup[addr.String()])
-			return nil
+			return
 		}
 
 		delete(Players, playerID)
@@ -31,10 +31,8 @@ func (d *Disconnect) Handle(addr *net.UDPAddr) error {
 			Send(Damage{ID: playerID}, p)
 		}
 	} else {
-		log.Println("Client:", Me, "--", d.ID, "Has disonnceted")
+		log.Println("Client", Me, "-- Player", d.ID, "Has disonnceted")
 	}
-
-	return nil
 }
 
 func (d Disconnect) MarshalBinary() ([]byte, error) {

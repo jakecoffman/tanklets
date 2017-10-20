@@ -15,21 +15,21 @@ type Move struct {
 
 const maxTurn = 0.1
 
-func (m *Move) Handle(addr *net.UDPAddr) error {
+func (m *Move) Handle(addr *net.UDPAddr) {
 	if !IsServer {
 		log.Println("I shouldn't have gotten this")
-		return nil
+		return
 	}
 
 	var player *Tank = Tanks[Lookup[addr.String()]]
 	if player == nil {
 		log.Println("Player not found", addr.String(), Lookup[addr.String()])
-		return nil
+		return
 	}
 
 	if m.Turn > maxTurn {
 		log.Println("Player tried to turn too fast: cheating?", m.Turn)
-		return nil
+		return
 	}
 
 	player.ControlBody.SetAngle(player.Body.Angle() + m.Turn)
@@ -43,8 +43,6 @@ func (m *Move) Handle(addr *net.UDPAddr) error {
 	}
 
 	player.Turret.SetAngle(player.Turret.Angle() - m.Turret)
-
-	return nil
 }
 
 func (m Move) MarshalBinary() ([]byte, error) {

@@ -1,9 +1,9 @@
 package tanklets
 
 import (
-	"time"
-	"github.com/jakecoffman/cp"
 	"net"
+
+	"github.com/jakecoffman/cp"
 )
 
 type PlayerID uint16
@@ -15,11 +15,11 @@ var (
 
 	// server only
 	Players = map[PlayerID]*net.UDPAddr{} // represent players separately for, e.g. disconnects
-	Lookup = map[string]PlayerID{} // look up Addr
+	Lookup  = map[string]PlayerID{}       // look up Addr
 
 	// both client and server (TODO: Server needs to sync some of this still)
-	Tanks = map[PlayerID]*Tank{}
-	Space *cp.Space
+	Tanks         = map[PlayerID]*Tank{}
+	Space         *cp.Space
 	Width, Height int
 )
 
@@ -78,17 +78,11 @@ func NewGame(width, height float64) {
 
 func Update(dt float64) {
 	for _, tank := range Tanks {
-		tank.Update()
+		tank.Update(dt)
 	}
 
-	now := time.Now()
-	for i := 0; i < len(Bullets); {
-		if now.Sub(Bullets[i].firedAt) > bulletTTL {
-			Bullets[i].Destroy()
-			Bullets = append(Bullets[:i], Bullets[i+1:]...)
-		} else {
-			break
-		}
+	for _, bullet := range Bullets {
+		bullet.Update(dt)
 	}
 
 	Space.Step(dt)

@@ -81,11 +81,13 @@ func main() {
 	client.Init(width, height)
 
 	tanklets.NetInit()
-	defer func() { log.Println(tanklets.NetClose()) }()
 
 	log.Println("Sending JOIN command")
 	tanklets.Send(tanklets.Join{}, tanklets.ServerAddr)
-	defer tanklets.Send(tanklets.Disconnect{}, tanklets.ServerAddr)
+	defer func() {
+		log.Println("Sending DISCONNECT")
+		tanklets.Send(tanklets.Disconnect{}, tanklets.ServerAddr)
+	}()
 
 	deltaTime := 0.
 	lastFrame := 0.

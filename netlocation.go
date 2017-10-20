@@ -17,16 +17,16 @@ type Location struct {
 	Turret float64
 }
 
-func (l *Location) Handle(addr *net.UDPAddr) error {
+func (l *Location) Handle(addr *net.UDPAddr) {
 	if IsServer {
 		log.Println("I shouldn't have gotten this")
-		return nil
+		return
 	}
 
 	player := Tanks[l.ID]
 	if player == nil {
-		log.Println("Player with ID", l.ID, "not found")
-		return nil
+		log.Println("Client", Me, "-- Player with ID", l.ID, "not found")
+		return
 	}
 	// ignore if the change is insignificant
 	if player.Body.Position().Sub(cp.Vector{l.X, l.Y}).LengthSq() > 4 {
@@ -39,7 +39,6 @@ func (l *Location) Handle(addr *net.UDPAddr) error {
 	player.Body.SetAngularVelocity(l.AngularVelocity)
 	player.ControlBody.SetAngularVelocity(l.AngularVelocity)
 	player.Turret.Body.SetAngle(l.Turret)
-	return nil
 }
 
 func (l *Location) MarshalBinary() ([]byte, error) {

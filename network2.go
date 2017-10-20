@@ -20,7 +20,6 @@ const (
 	SHOOT
 	LOCATION
 	DAMAGE
-	PING
 )
 
 var ServerAddr *net.UDPAddr
@@ -143,29 +142,24 @@ func Recv() {
 			log.Println(err)
 			continue
 		}
-		//go func(){
-		//	time.Sleep(SimulatedNetworkLatencyMS/2 * time.Millisecond)
+		incoming := Incoming{handler, addr}
 		select {
-		case Incomings <- Incoming{handler, addr}:
+		case Incomings <- incoming:
 		default:
-			// the idea here is the first message is probably out of date, so drop that one
+			// the first message is more likely to be out of date, so drop that one
 			<-Incomings
-			Incomings <- Incoming{handler, addr}
+			Incomings <- incoming
 			log.Println("Error: queue is full, dropping message")
 		}
-		//}()
 	}
 }
 
-// ProcessIncoming handles all incoming messages that are queued
+// ProcessIncoming runs on the game thread and handles all incoming messages that are queued
 func ProcessIncoming() {
-	var err error
 	for {
 		select {
 		case incoming := <-Incomings:
-			if err = incoming.Handler.Handle(incoming.Addr); err != nil {
-				log.Fatal(err)
-			}
+			incoming.Handler.Handle(incoming.Addr)
 		default:
 			// no data to process this frame
 			return
@@ -181,10 +175,7 @@ func Send(handler encoding.BinaryMarshaler, addr *net.UDPAddr) {
 		return
 	}
 
-	//go func() {
-	//	time.Sleep(SimulatedNetworkLatencyMS / 2 * time.Millisecond)
 	Outgoings <- Outgoing{data: data, addr: addr}
-	//}()
 }
 
 func ProcessOutgoingServer() {
@@ -227,7 +218,7 @@ func ProcessingOutgoingClient() {
 }
 
 type Handler interface {
-	Handle(addr *net.UDPAddr) error
+	Handle(addr *net.UDPAddr)
 	encoding.BinaryMarshaler
 	encoding.BinaryUnmarshaler
 }
@@ -237,7 +228,7 @@ func Marshal(fields []interface{}, buf *bytes.Buffer) ([]byte, error) {
 	for _, field := range fields {
 		err = binary.Write(buf, binary.LittleEndian, field)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 			return nil, err
 		}
 	}

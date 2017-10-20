@@ -13,6 +13,7 @@ const (
 )
 
 const updateRate = 2
+
 var updateCount int
 
 func main() {
@@ -50,7 +51,17 @@ func main() {
 		}
 	}
 
+	var hasHadPlayersConnect bool
+
 	for {
+		if len(tanklets.Players) > 0 {
+			hasHadPlayersConnect = true
+		}
+		if len(tanklets.Players) == 0 && hasHadPlayersConnect {
+			log.Println("All players have disconnected, shutting down")
+			return
+		}
+
 		// ticks get priority, so try to tick first always
 		select {
 		case <-tick:
@@ -63,9 +74,7 @@ func main() {
 		case <-tick:
 			ticklet()
 		case incoming := <-tanklets.Incomings:
-			if err := incoming.Handler.Handle(incoming.Addr); err != nil {
-				log.Fatal(err)
-			}
+			incoming.Handler.Handle(incoming.Addr)
 		}
 	}
 }

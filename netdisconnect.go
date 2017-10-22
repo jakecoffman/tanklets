@@ -2,6 +2,7 @@ package tanklets
 
 import (
 	"encoding/binary"
+	"fmt"
 	"log"
 	"net"
 )
@@ -12,7 +13,7 @@ type Disconnect struct {
 
 func (d *Disconnect) Handle(addr *net.UDPAddr) {
 	if IsServer {
-		log.Println("SERVER: Player", d.ID, "has disonnceted")
+		fmt.Println("SERVER: Player", d.ID, "has disonnceted")
 
 		playerID := Lookup[addr.String()]
 		var player *net.UDPAddr = Players[playerID]
@@ -31,7 +32,7 @@ func (d *Disconnect) Handle(addr *net.UDPAddr) {
 			Send(Damage{ID: playerID}, p)
 		}
 	} else {
-		log.Println("Client", Me, "-- Player", d.ID, "Has disonnceted")
+		fmt.Println("Client", Me, "-- Player", d.ID, "Has disonnceted")
 	}
 }
 

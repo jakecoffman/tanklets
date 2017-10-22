@@ -2,9 +2,10 @@ package tanklets
 
 import (
 	"encoding/binary"
-	"log"
 	"math/rand"
 	"net"
+
+	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
@@ -34,6 +35,7 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 	var tank *Tank
 
 	if IsServer {
+		fmt.Println("Handling join")
 		tank = NewTank(curId, colors[colorCursor])
 		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
 		// tell this player their ID
@@ -56,10 +58,10 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 		curId++
 		colorCursor++
 	} else {
-		log.Println("Player joined")
+		fmt.Println("Player joined")
 		tank = NewTank(j.ID, j.Color)
 		if j.You {
-			log.Println("Oh, it's me!")
+			fmt.Println("Oh, it's me!")
 			Me = tank.ID
 			//Player = player
 			State = GAME_PLAYING

@@ -13,7 +13,7 @@ const (
 	TERABYTE = 1024 * GIGABYTE
 )
 
-func Bytes(b int) string {
+func Bytes(b uint64) string {
 	unit := ""
 	value := float32(b)
 

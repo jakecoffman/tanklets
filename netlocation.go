@@ -29,9 +29,9 @@ func (l *Location) Handle(addr *net.UDPAddr) {
 		return
 	}
 	// ignore if the change is insignificant
-	if player.Body.Position().Sub(cp.Vector{l.X, l.Y}).LengthSq() > 4 {
+	//if player.Body.Position().Sub(cp.Vector{l.X, l.Y}).LengthSq() > 4 {
 		player.Body.SetPosition(cp.Vector{l.X, l.Y})
-	}
+	//}
 	player.Body.SetVelocity(l.Vx, l.Vy)
 	player.ControlBody.SetVelocity(l.Vx, l.Vy)
 	player.Body.SetAngle(l.Angle)

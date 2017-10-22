@@ -82,10 +82,10 @@ func main() {
 
 	tanklets.NetInit()
 
-	log.Println("Sending JOIN command")
+	fmt.Println("Sending JOIN command")
 	tanklets.Send(tanklets.Join{}, tanklets.ServerAddr)
 	defer func() {
-		log.Println("Sending DISCONNECT")
+		fmt.Println("Sending DISCONNECT")
 		tanklets.Send(tanklets.Disconnect{}, tanklets.ServerAddr)
 	}()
 

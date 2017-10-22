@@ -5,6 +5,8 @@ import (
 
 	"log"
 
+	"fmt"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
 )
@@ -121,7 +123,7 @@ func (tank *Tank) Damage(bullet *Bullet) {
 	tank.Body.SetAngularVelocity(0)
 	tank.ControlBody.SetAngularVelocity(0)
 
-	log.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
+	fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
 
 	for _, p := range Players {
 		Send(Damage{tank.ID}, p)

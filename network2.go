@@ -7,7 +7,9 @@ import (
 	"encoding/binary"
 	"log"
 	"net"
+	"sync/atomic"
 	"time"
+	"fmt"
 )
 
 const SimulatedNetworkLatencyMS = 100
@@ -22,7 +24,10 @@ const (
 	DAMAGE
 )
 
-var ServerAddr *net.UDPAddr
+var ServerAddr = &net.UDPAddr{
+	Port: 1234,
+	IP:   net.ParseIP("127.0.0.1"),
+}
 var udpConn *net.UDPConn
 var IsServer bool
 
@@ -36,29 +41,45 @@ type Outgoing struct {
 	addr *net.UDPAddr
 }
 
-var Incomings chan Incoming
-var Outgoings chan Outgoing
+var Incomings = make(chan Incoming, 1000)
+var Outgoings = make(chan Outgoing, 1000)
+
+var tick = time.Tick(1 * time.Second)
+var incomingBytesPerSecond uint64
+var outgoingBytesPerSecond uint64
 
 func init() {
-	ServerAddr = &net.UDPAddr{
-		Port: 1234,
-		IP:   net.ParseIP("127.0.0.1"),
-	}
-	Incomings = make(chan Incoming, 1000)
-	Outgoings = make(chan Outgoing, 1000)
+	go func() {
+		for {
+			select {
+			case <-tick:
+				in, out := atomic.LoadUint64(&incomingBytesPerSecond), atomic.LoadUint64(&outgoingBytesPerSecond)
+
+				if IsServer {
+					fmt.Println("in :", Bytes(in))
+					fmt.Println("out:", Bytes(out))
+				} else {
+					//log.Println("incoming client bytes:", incomingBytesPerSecond)
+				}
+				atomic.StoreUint64(&incomingBytesPerSecond, 0)
+				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
+			default:
+			}
+		}
+	}()
 }
 
 func NetInit() {
 	var err error
 
 	if IsServer {
-		log.Println("Init server connection")
+		fmt.Println("Init server connection")
 		udpConn, err = net.ListenUDP("udp", ServerAddr)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		log.Println("Init client connection")
+		fmt.Println("Init client connection")
 		udpConn, err = net.DialUDP("udp", nil, ServerAddr)
 		if err != nil {
 			log.Fatal(err)
@@ -77,14 +98,9 @@ func NetInit() {
 }
 
 func NetClose() error {
-	log.Println("Net close")
+	fmt.Println("Net close")
 	return udpConn.Close()
 }
-
-var incomingTick = time.Tick(1 * time.Second)
-var incomingBytesPerSecond int
-var outgoingTick = time.Tick(1 * time.Second)
-var outgoingBytesPerSecond int
 
 // Recv runs in a goroutine and un-marshals incoming data, queuing it up for ProcessIncoming to handle
 func Recv() {
@@ -106,18 +122,7 @@ func Recv() {
 				return
 			}
 		}
-		incomingBytesPerSecond += n
-
-		select {
-		case <-incomingTick:
-			if IsServer {
-				log.Println("server in :", Bytes(incomingBytesPerSecond))
-			} else {
-				//log.Println("incoming client bytes:", incomingBytesPerSecond)
-			}
-			incomingBytesPerSecond = 0
-		default:
-		}
+		atomic.AddUint64(&incomingBytesPerSecond, uint64(n))
 
 		var handler Handler
 		switch data[0] {
@@ -180,20 +185,16 @@ func Send(handler encoding.BinaryMarshaler, addr *net.UDPAddr) {
 
 func ProcessOutgoingServer() {
 	var outgoing Outgoing
+	var n int
+	var err error
 	for {
 		outgoing = <-Outgoings
-		n, err := udpConn.WriteToUDP(outgoing.data, outgoing.addr)
+		n, err = udpConn.WriteToUDP(outgoing.data, outgoing.addr)
 		if err != nil {
 			panic(err)
 			return
 		}
-		outgoingBytesPerSecond += n
-		select {
-		case <-outgoingTick:
-			log.Println("server out:", Bytes(outgoingBytesPerSecond))
-			outgoingBytesPerSecond = 0
-		default:
-		}
+		atomic.AddUint64(&outgoingBytesPerSecond, uint64(n))
 	}
 }
 
@@ -207,13 +208,7 @@ func ProcessingOutgoingClient() {
 		if err != nil {
 			log.Println(err)
 		}
-		outgoingBytesPerSecond += n
-		select {
-		case <-outgoingTick:
-			//log.Println("outgoing client bytes:", outgoingBytesPerSecond)
-			outgoingBytesPerSecond = 0
-		default:
-		}
+		atomic.AddUint64(&outgoingBytesPerSecond, uint64(n))
 	}
 }
 

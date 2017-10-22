@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -12,21 +13,17 @@ const (
 	stepDuration = step * time.Nanosecond
 )
 
-const updateRate = 2
-
-var updateCount int
-
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	tanklets.NewGame(800, 600)
 	tanklets.IsServer = true
 	tanklets.NetInit()
-	defer func() { log.Println(tanklets.NetClose()) }()
+	defer func() { fmt.Println(tanklets.NetClose()) }()
 
 	tick := time.Tick(stepDuration)
 	var ticks int
 
-	log.Println("Server Running")
+	fmt.Println("Server Running")
 
 	lastFrame := time.Now()
 	var dt time.Duration
@@ -37,12 +34,6 @@ func main() {
 		lastFrame = currentFrame
 		ticks++
 		tanklets.Update(dt.Seconds())
-
-		updateCount++
-		if updateCount < updateRate {
-			return
-		}
-		updateCount = 0
 
 		for _, player := range tanklets.Players {
 			for _, tank := range tanklets.Tanks {
@@ -58,7 +49,7 @@ func main() {
 			hasHadPlayersConnect = true
 		}
 		if len(tanklets.Players) == 0 && hasHadPlayersConnect {
-			log.Println("All players have disconnected, shutting down")
+			fmt.Println("All players have disconnected, shutting down")
 			return
 		}
 

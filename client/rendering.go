@@ -10,9 +10,10 @@ var (
 )
 
 var (
-	Renderer *SpriteRenderer
-	Text     *TextRenderer
-	Simple   *SimpleRenderer
+	Renderer      *SpriteRenderer
+	Text          *TextRenderer
+	Simple        *SimpleRenderer
+	SpaceRenderer *CPRenderer
 )
 
 var (
@@ -26,13 +27,15 @@ func Init(width, height float32) {
 	ResourceManager.LoadShader("shaders/main.vs.glsl", "shaders/main.fs.glsl", "sprite")
 	ResourceManager.LoadShader("shaders/simple.vs.glsl", "shaders/simple.fs.glsl", "simple")
 	ResourceManager.LoadShader("shaders/text.vs.glsl", "shaders/text.fs.glsl", "text")
+	ResourceManager.LoadShader("shaders/cp.vs.glsl", "shaders/cp.fs.glsl", "cp")
 
 	// renderers
-	projection := mgl32.Ortho2D(0, width, height, 0)
+	projection = mgl32.Ortho2D(0, width, height, 0)
 	Text = NewTextRenderer(ResourceManager.Shader("text"), width, height, "textures/Roboto-Light.ttf")
 	Text.SetColor(.8, .8, .3, 1)
 	Simple = NewSimpleRenderer(ResourceManager.Shader("simple"), projection)
 	Renderer = NewSpriteRenderer(ResourceManager.Shader("sprite"), projection)
+	SpaceRenderer = NewCPRenderer(ResourceManager.Shader("cp"), projection)
 
 	// textures
 	tankTexture = ResourceManager.LoadTexture("textures/tank.png", "tank")
@@ -40,7 +43,21 @@ func Init(width, height float32) {
 	bulletTexture = ResourceManager.LoadTexture("textures/bullet.png", "bullet")
 }
 
+var projection mgl32.Mat4
+
 func Render() {
+	myTank := tanklets.Tanks[tanklets.Me]
+	pos := myTank.Position()
+	center := pos.Add(Mouse.Mult(0.2))
+	var x, y float32
+	if RightClick {
+		x, y = float32(center.X), float32(center.Y)
+	} else {
+		x, y = float32(pos.X), float32(pos.Y)
+	}
+	projection = mgl32.Ortho2D(x-800./2., x+800./2., y+600./2., y-600./2.)
+	Renderer.SetProjection(projection)
+
 	for _, tank := range tanklets.Tanks {
 		DrawTank(tank)
 	}
@@ -48,9 +65,10 @@ func Render() {
 	for _, bullet := range tanklets.Bullets {
 		DrawBullet(bullet)
 	}
-	//g.text.Print(fmt.Sprint(g.Player.Position()), 20, 30, 1)
 
-	//g.simple.Draw(float32(pos.X), float32(pos.Y), float32(tank1.width), float32(tank1.height), float32(tank1.Angle()), 0, 0, 0, .5)
+	// useful for debugging space issues
+	//SpaceRenderer.SetProjection(projection)
+	//SpaceRenderer.DrawSpace(tanklets.Space)
 
 	if tanklets.State == tanklets.GAME_WAITING {
 		Text.Print("Connecting", 50, 100, 1)

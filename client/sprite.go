@@ -23,6 +23,10 @@ var (
 	DefaultColor      = mgl32.Vec3{1, 1, 1}
 )
 
+func (s *SpriteRenderer) SetProjection(projection mgl32.Mat4) {
+	s.shader.Use().SetMat4("projection", projection)
+}
+
 func (s *SpriteRenderer) DrawSprite(texture *Texture2D, position, size mgl32.Vec2, rotate float64, color mgl32.Vec3) {
 	s.shader.Use()
 	model := mgl32.Translate3D(position.X()-0.5*size.X(), position.Y()-0.5*size.Y(), 0)

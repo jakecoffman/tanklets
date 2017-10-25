@@ -64,6 +64,10 @@ func NewSimpleRenderer(shader *Shader, projection mgl32.Mat4) *SimpleRenderer {
 	return renderer
 }
 
+func (s *SimpleRenderer) SetProjection(projection mgl32.Mat4) {
+	s.shader.Use().SetMat4("projection", projection)
+}
+
 func (s *SimpleRenderer) Draw(x, y float32, sizex, sizey float32, rotate float32, r, g, b, a float32) {
 	transform := mgl32.Translate3D(x, y, 0)
 

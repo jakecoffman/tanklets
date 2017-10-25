@@ -63,7 +63,6 @@ func init() {
 				}
 				atomic.StoreUint64(&incomingBytesPerSecond, 0)
 				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
-			default:
 			}
 		}
 	}()

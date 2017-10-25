@@ -3,7 +3,10 @@ package client
 import (
 	"time"
 
+	"log"
+
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
 	"github.com/jakecoffman/tanklets"
 )
@@ -69,7 +72,23 @@ func ProcessInput(dt float64) {
 }
 
 func CursorCallback(w *glfw.Window, xpos float64, ypos float64) {
-	Mouse = cp.Vector{xpos, ypos}
+	modelMat := mgl32.Mat4{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1,
+	}
+	obj, err := mgl32.UnProject(
+		mgl32.Vec3{float32(xpos), float32(float64(600) - ypos), 0},
+		modelMat,
+		projection,
+		0, 0,
+		800, 600,
+	)
+	if err != nil {
+		log.Println(err)
+	}
+	Mouse = cp.Vector{float64(obj.X()), float64(obj.Y())}
 }
 
 func MouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {

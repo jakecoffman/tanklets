@@ -62,11 +62,20 @@ func (bullet *Bullet) Size() mgl32.Vec2 {
 	return mgl32.Vec2{10, 10}
 }
 
-func (bullet *Bullet) Destroy() {
+func (bullet *Bullet) Destroy(now bool) {
 	delete(Bullets, bullet.ID)
 
 	if bullet.Shape == nil {
 		log.Println("Shape was removed multiple times")
+		return
+	}
+
+	if now {
+		bullet.Shape.UserData = nil
+		Space.RemoveShape(bullet.Shape)
+		Space.RemoveBody(bullet.Body)
+		bullet.Shape = nil
+		bullet.Body = nil
 		return
 	}
 
@@ -105,7 +114,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 		}
 
 		tank.Damage(bullet)
-		bullet.Destroy()
+		bullet.Destroy(false)
 
 		bullet.Bounce = 100
 		shot := bullet.Location()
@@ -115,8 +124,8 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 	case *Bullet:
 		bullet2 := b.UserData.(*Bullet)
 
-		bullet.Destroy()
-		bullet2.Destroy()
+		bullet.Destroy(false)
+		bullet2.Destroy(false)
 
 		bullet.Bounce = 100
 		bullet2.Bounce = 100
@@ -132,17 +141,15 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 		bullet.Bounce++
 
 		if bullet.Bounce > 1 {
-			bullet.Destroy()
-			return false
+			bullet.Destroy(false)
+		} else {
+			// bounce
+			d := bullet.Body.Velocity()
+			normal := arb.Normal()
+			reflection := d.Sub(normal.Mult(2 * d.Dot(normal)))
+			bullet.Body.SetVelocityVector(reflection)
+			bullet.Body.SetAngle(math.Atan2(reflection.Y, reflection.X))
 		}
-
-		d := bullet.Body.Velocity()
-		normal := arb.Normal()
-		reflection := d.Sub(normal.Mult(2 * d.Dot(normal)))
-		bullet.Body.SetVelocityVector(reflection)
-		bullet.Body.SetAngle(math.Atan2(reflection.Y, reflection.X))
-
-		// do I need to apply an impulse here to get it out of whatever it hit?
 
 		shot := bullet.Location()
 		for _, p := range Players {

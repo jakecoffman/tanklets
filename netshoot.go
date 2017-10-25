@@ -60,7 +60,7 @@ func (s *Shoot) Handle(addr *net.UDPAddr) {
 		bullet.Bounce = int(s.Bounce)
 
 		if bullet.Bounce > 1 {
-			bullet.Destroy()
+			bullet.Destroy(true)
 			return
 		}
 

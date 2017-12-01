@@ -59,7 +59,7 @@ func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tank.Body = Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, TankWidth, TankHeight)))
 	tankShape := Space.AddShape(cp.NewBox(tank.Body, TankWidth, TankHeight, 0))
 	tankShape.SetElasticity(0)
-	tankShape.SetFriction(0)
+	tankShape.SetFriction(1)
 	tankShape.SetFilter(cp.NewShapeFilter(uint(id), PLAYER_MASK_BIT, PLAYER_MASK_BIT))
 	tankShape.UserData = tank
 

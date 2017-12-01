@@ -39,6 +39,7 @@ func (l *Location) Handle(addr *net.UDPAddr) {
 	player.Body.SetAngularVelocity(l.AngularVelocity)
 	player.ControlBody.SetAngularVelocity(l.AngularVelocity)
 	player.Turret.Body.SetAngle(l.Turret)
+	player.Turret.SetPosition(player.Body.Position())
 }
 
 func (l *Location) MarshalBinary() ([]byte, error) {

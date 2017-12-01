@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	// 60 tickrate
 	step         = 16666666
 	stepDuration = step * time.Nanosecond
 )
@@ -21,31 +22,35 @@ func main() {
 	defer func() { fmt.Println(tanklets.NetClose()) }()
 
 	tick := time.Tick(stepDuration)
-	var ticks int
 
 	fmt.Println("Server Running")
 
 	lastFrame := time.Now()
 	var dt time.Duration
 
+	// ticklet updates, runs one physics step, sends update to all players
 	ticklet := func() {
 		currentFrame := time.Now()
 		dt = currentFrame.Sub(lastFrame)
 		lastFrame = currentFrame
-		ticks++
 		tanklets.Update(dt.Seconds())
+	}
 
-		for _, player := range tanklets.Players {
-			for _, tank := range tanklets.Tanks {
-				tanklets.Send(tank.Location(), player)
+	go func() {
+		for {
+			time.Sleep(100*time.Millisecond)
+			for _, player := range tanklets.Players {
+				for _, tank := range tanklets.Tanks {
+					tanklets.Send(tank.Location(), player)
+				}
 			}
 		}
-	}
+	}()
 
 	var hasHadPlayersConnect bool
 
 	for {
-		if len(tanklets.Players) > 0 {
+		if !hasHadPlayersConnect && len(tanklets.Players) > 0 {
 			hasHadPlayersConnect = true
 		}
 		if len(tanklets.Players) == 0 && hasHadPlayersConnect {

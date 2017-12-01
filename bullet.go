@@ -137,7 +137,8 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 			Send(shot2, p)
 		}
 	default:
-		// TODO: This will bounce over anything that isn't a tank or bullet
+		// This will bounce over anything that isn't a tank or bullet, probably check for wall here?
+
 		bullet.Bounce++
 
 		if bullet.Bounce > 1 {

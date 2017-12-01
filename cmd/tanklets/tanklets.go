@@ -73,7 +73,7 @@ func main() {
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
-	gl.Enable(gl.CULL_FACE)
+	//gl.Enable(gl.CULL_FACE) cp renderer doesn't like
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 

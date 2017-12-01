@@ -62,6 +62,7 @@ func ProcessInput(dt float64) {
 	mouseDelta := Mouse.Sub(Player.Turret.Body.Position())
 	turretTurn := Player.Turret.Rotation().Unrotate(mouseDelta).ToAngle()
 	Player.Turret.SetAngle(Player.Turret.Angle() - turretTurn)
+	Player.Turret.SetPosition(Player.Position())
 
 	// send all of this input to the server
 	move := tanklets.Move{Turn: turn, Throttle: throttle, Turret: turretTurn}

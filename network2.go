@@ -59,7 +59,7 @@ func init() {
 					fmt.Println("in :", Bytes(in))
 					fmt.Println("out:", Bytes(out))
 				} else {
-					//log.Println("incoming client bytes:", incomingBytesPerSecond)
+					return
 				}
 				atomic.StoreUint64(&incomingBytesPerSecond, 0)
 				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
@@ -179,6 +179,11 @@ func Send(handler encoding.BinaryMarshaler, addr *net.UDPAddr) {
 		return
 	}
 
+	Outgoings <- Outgoing{data: data, addr: addr}
+}
+
+// SendRaw is the same as Send but takes bytes
+func SendRaw(data []byte, addr *net.UDPAddr) {
 	Outgoings <- Outgoing{data: data, addr: addr}
 }
 

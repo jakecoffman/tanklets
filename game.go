@@ -64,7 +64,7 @@ func NewGame(width, height float64) {
 		var seg *cp.Shape
 		seg = space.AddShape(cp.NewSegment(space.StaticBody, sides[i], sides[i+1], 0))
 		seg.SetElasticity(1)
-		seg.SetFriction(1)
+		seg.SetFriction(0)
 		seg.SetFilter(PlayerFilter)
 	}
 
@@ -86,4 +86,8 @@ func Update(dt float64) {
 	}
 
 	Space.Step(dt)
+
+	for _, tank := range Tanks {
+		tank.Turret.SetPosition(tank.Body.Position())
+	}
 }

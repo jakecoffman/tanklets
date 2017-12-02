@@ -16,6 +16,7 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/jakecoffman/tanklets"
 	"github.com/jakecoffman/tanklets/client"
+	"github.com/golang-ui/nuklear/nk"
 )
 
 const (
@@ -40,7 +41,7 @@ func main() {
 	glfw.Init()
 	defer glfw.Terminate()
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
-	glfw.WindowHint(glfw.ContextVersionMinor, 3)
+	glfw.WindowHint(glfw.ContextVersionMinor, 2)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 
 	if runtime.GOOS == "darwin" {
@@ -73,9 +74,6 @@ func main() {
 	if err := gl.Init(); err != nil {
 		panic(err)
 	}
-	//gl.Enable(gl.CULL_FACE) cp renderer doesn't like
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	tanklets.NewGame(width, height)
 	client.Init(width, height)
@@ -94,6 +92,13 @@ func main() {
 
 	frames := 0
 	showFps := time.Tick(1 * time.Second)
+
+	client.GuiInit(window)
+	defer client.GuiDestroy()
+
+	guiState := &client.State{
+		BgColor: nk.NkRgba(28, 48, 62, 255),
+	}
 
 	for !window.ShouldClose() {
 		currentFrame := glfw.GetTime()
@@ -115,7 +120,10 @@ func main() {
 		gl.ClearColor(.1, .1, .1, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
+		gl.Enable(gl.BLEND)
+		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 		client.Render()
+		client.GuiRender(guiState)
 
 		window.SwapBuffers()
 	}

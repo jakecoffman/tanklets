@@ -9,7 +9,7 @@ import (
 
 var ctx *nk.Context
 
-func GuiInit(win *glfw.Window) {
+func GuiInit(win *glfw.Window) *nk.UserFont {
 	ctx = nk.NkPlatformInit(win, nk.PlatformInstallCallbacks)
 
 	atlas := nk.NewFontAtlas()
@@ -19,8 +19,11 @@ func GuiInit(win *glfw.Window) {
 	sansFont := nk.NkFontAtlasAddDefault(atlas, 16, nil)
 	nk.NkFontStashEnd()
 	if sansFont != nil {
-		nk.NkStyleSetFont(ctx, sansFont.Handle())
+		sansFontHandle := sansFont.Handle()
+		nk.NkStyleSetFont(ctx, sansFontHandle)
+		return sansFontHandle
 	}
+	return nil
 }
 
 func GuiDestroy() {

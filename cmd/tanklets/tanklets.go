@@ -3,20 +3,18 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
-	"time"
-
-	"os"
-
 	"strconv"
+	"time"
 
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/golang-ui/nuklear/nk"
 	"github.com/jakecoffman/tanklets"
 	"github.com/jakecoffman/tanklets/client"
-	"github.com/golang-ui/nuklear/nk"
 )
 
 const (
@@ -43,10 +41,7 @@ func main() {
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
 	glfw.WindowHint(glfw.ContextVersionMinor, 2)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-
-	if runtime.GOOS == "darwin" {
-		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	}
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
 	// glfw window creation
 	window, err := glfw.CreateWindow(width, height, "Tanklets", nil, nil)
@@ -93,7 +88,7 @@ func main() {
 	frames := 0
 	showFps := time.Tick(1 * time.Second)
 
-	client.GuiInit(window)
+	font := client.GuiInit(window)
 	defer client.GuiDestroy()
 
 	guiState := &client.State{
@@ -129,6 +124,7 @@ func main() {
 	}
 
 	client.ResourceManager.Clear()
+	runtime.KeepAlive(font)
 }
 
 func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {

@@ -15,7 +15,7 @@ func DrawTank(tank *tanklets.Tank) {
 	}
 
 	Renderer.DrawSprite(tankTexture, mgl32.Vec2{x, y}, mgl32.Vec2{tanklets.TankWidth, tanklets.TankHeight}, tank.Angle(), color)
-	Renderer.DrawSprite(turretTexture, mgl32.Vec2{x, y}, mgl32.Vec2{tanklets.TankHeight, tanklets.TankHeight}, tank.Turret.Angle(), color)
+	Renderer.DrawSprite(turretTexture, mgl32.Vec2{x, y}, mgl32.Vec2{32, 32}, tank.Turret.Angle(), color)
 }
 
 func DrawBullet(bullet *tanklets.Bullet) {

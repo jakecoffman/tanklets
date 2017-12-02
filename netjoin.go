@@ -2,10 +2,9 @@ package tanklets
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math/rand"
 	"net"
-
-	"fmt"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"

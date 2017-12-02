@@ -1,9 +1,8 @@
 package client
 
 import (
-	"time"
-
 	"log"
+	"time"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -12,11 +11,21 @@ import (
 )
 
 var (
-	Player                                     *tanklets.Tank
-	Keys                                       = [1024]bool{}
-	Mouse                                      cp.Vector
-	LeftDown, RightDown, LeftClick, RightClick bool
+	Player     *tanklets.Tank
+	Keys       = [1024]bool{}
+	mouse      cp.Vector
+	LeftDown   bool
+	RightDown  bool
+	LeftClick  bool
+	RightClick bool
 )
+
+var identityMatrix = mgl32.Mat4{
+	1, 0, 0, 0,
+	0, 1, 0, 0,
+	0, 0, 1, 0,
+	0, 0, 0, 1,
+}
 
 func ProcessInput(dt float64) {
 	if tanklets.State != tanklets.GAME_PLAYING {
@@ -59,10 +68,28 @@ func ProcessInput(dt float64) {
 		Player.LastShot = time.Now()
 	}
 
-	mouseDelta := Mouse.Sub(Player.Turret.Body.Position())
-	turretTurn := Player.Turret.Rotation().Unrotate(mouseDelta).ToAngle()
-	Player.Turret.SetAngle(Player.Turret.Angle() - turretTurn)
-	Player.Turret.SetPosition(Player.Position())
+	// update projection and mouse world position
+	myTank := tanklets.Tanks[tanklets.Me]
+	pos := myTank.Position()
+	x, y := float32(pos.X), float32(pos.Y)
+	projection = mgl32.Ortho2D(x-800./2., x+800./2., y+600./2., y-600./2.)
+	obj, err := mgl32.UnProject(
+		mgl32.Vec3{float32(mouse.X), 600 - float32(mouse.Y), 0},
+		identityMatrix,
+		projection,
+		0, 0,
+		800, 600,
+	)
+	var turretTurn float64
+	if err != nil {
+		log.Println(err)
+	} else {
+		mouseWorld := cp.Vector{float64(obj.X()), float64(obj.Y())}
+		mouseDelta := mouseWorld.Sub(Player.Turret.Body.Position())
+		turretTurn = Player.Turret.Rotation().Unrotate(mouseDelta).ToAngle()
+		Player.Turret.SetAngle(Player.Turret.Angle() - turretTurn)
+		Player.Turret.SetPosition(Player.Position())
+	}
 
 	// send all of this input to the server
 	move := tanklets.Move{Turn: turn, Throttle: throttle, Turret: turretTurn}
@@ -73,23 +100,7 @@ func ProcessInput(dt float64) {
 }
 
 func CursorCallback(w *glfw.Window, xpos float64, ypos float64) {
-	modelMat := mgl32.Mat4{
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1,
-	}
-	obj, err := mgl32.UnProject(
-		mgl32.Vec3{float32(xpos), float32(float64(600) - ypos), 0},
-		modelMat,
-		projection,
-		0, 0,
-		800, 600,
-	)
-	if err != nil {
-		log.Println(err)
-	}
-	Mouse = cp.Vector{float64(obj.X()), float64(obj.Y())}
+	mouse = cp.Vector{xpos, ypos}
 }
 
 func MouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
@@ -100,14 +111,14 @@ func MouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Ac
 		//			// give the mouse click a little radius to make it easier to click small shapes.
 		//			//radius := 5.0
 		//
-		//			//info := Space.PointQueryNearest(Mouse, radius, GrabFilter)
+		//			//info := Space.PointQueryNearest(mouse, radius, GrabFilter)
 		//			//
 		//			//if info.Shape != nil && info.Shape.Body().Mass() < INFINITY {
 		//			//	var nearest Vector
 		//			//	if info.Distance > 0 {
 		//			//		nearest = info.Point
 		//			//	} else {
-		//			//		nearest = Mouse
+		//			//		nearest = mouse
 		//			//	}
 		//			//
 		//			//	body := info.Shape.Body()

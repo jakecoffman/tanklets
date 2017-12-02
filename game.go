@@ -54,6 +54,7 @@ func NewGame(width, height float64) {
 	space := cp.NewSpace()
 
 	sides := []cp.Vector{
+		// outer walls
 		{0, 0}, {0, height},
 		{width, 0}, {width, height},
 		{0, 0}, {width, 0},
@@ -67,6 +68,20 @@ func NewGame(width, height float64) {
 		seg.SetFriction(0)
 		seg.SetFilter(PlayerFilter)
 	}
+
+	const boxSize = 25
+	boxBody := space.AddBody(cp.NewBody(1, cp.MomentForBox(1, boxSize, boxSize)))
+	boxShape := space.AddShape(cp.NewBox(boxBody, boxSize, boxSize, 0))
+	boxBody.SetPosition(cp.Vector{150, 150})
+	boxShape.SetFriction(1)
+
+	pivot := space.AddConstraint(cp.NewPivotJoint2(space.StaticBody, boxBody, cp.Vector{}, cp.Vector{}))
+	pivot.SetMaxBias(0)       // disable joint correction
+	pivot.SetMaxForce(1000.0) // emulate linear friction
+
+	gear := space.AddConstraint(cp.NewGearJoint(space.StaticBody, boxBody, 0.0, 1.0))
+	gear.SetMaxBias(0)
+	gear.SetMaxForce(5000.0) // emulate angular friction
 
 	handler := space.NewWildcardCollisionHandler(COLLISION_TYPE_BULLET)
 	handler.PreSolveFunc = BulletPreSolve

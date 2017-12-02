@@ -34,7 +34,7 @@ func NewBullet(firedBy *Tank, id BulletID) *Bullet {
 		PlayerID: firedBy.ID,
 	}
 	bullet.Body = Space.AddBody(cp.NewKinematicBody())
-	bullet.Shape = Space.AddShape(cp.NewCircle(bullet.Body, 5, cp.Vector{}))
+	bullet.Shape = Space.AddShape(cp.NewSegment(bullet.Body, cp.Vector{-2, 0}, cp.Vector{2, 0}, 3))
 	//bullet.Shape.SetSensor(true)
 	bullet.Shape.SetCollisionType(COLLISION_TYPE_BULLET)
 	bullet.Shape.SetFilter(PlayerFilter)

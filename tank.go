@@ -1,11 +1,9 @@
 package tanklets
 
 import (
-	"time"
-
-	"log"
-
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
@@ -14,7 +12,7 @@ import (
 // default tank attributes (power-ups could change them!)
 const (
 	TankWidth  = 20
-	TankHeight = 30
+	TankHeight = 32
 
 	TurretWidth  = 4
 	TurretHeight = 15
@@ -47,7 +45,7 @@ type Turret struct {
 	*cp.Body
 	*cp.Shape
 
-	width, height float32
+	width, height float64
 }
 
 func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
@@ -64,13 +62,13 @@ func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tankShape.UserData = tank
 
 	pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
-	pivot.SetMaxBias(0)
-	pivot.SetMaxForce(10000)
+	pivot.SetMaxBias(0)      // prevent tanks from snapping together
+	pivot.SetMaxForce(10000) // prevent tanks from spinning crazy
 
-	gear := Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
-	//gear.SetErrorBias(0) // attempt to fully correct the joint each step
-	gear.SetMaxBias(5)
-	gear.SetMaxForce(50000)
+	Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
+	//gear.SetErrorBias(0) // idk
+	//gear.SetMaxBias(5) // idk
+	//gear.SetMaxForce(50000) // don't set or tank will go through walls
 
 	tank.Turret.Body = Space.AddBody(cp.NewKinematicBody())
 	tank.Turret.Shape = Space.AddShape(cp.NewSegment(tank.Turret.Body, cp.Vector{0, 0}, cp.Vector{TurretHeight, 0}, TurretWidth))

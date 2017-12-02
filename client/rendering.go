@@ -46,23 +46,19 @@ func Init(width, height float32) {
 var projection mgl32.Mat4
 
 func Render() {
-	myTank := tanklets.Tanks[tanklets.Me]
-	pos := myTank.Position()
-	x, y := float32(pos.X), float32(pos.Y)
-	projection = mgl32.Ortho2D(x-800./2., x+800./2., y+600./2., y-600./2.)
 	Renderer.SetProjection(projection)
 
 	// useful for debugging space issues
 	SpaceRenderer.SetProjection(projection)
 	SpaceRenderer.DrawSpace(tanklets.Space)
 
-	//for _, tank := range tanklets.Tanks {
-	//	DrawTank(tank)
-	//}
+	for _, tank := range tanklets.Tanks {
+		DrawTank(tank)
+	}
 
-	//for _, bullet := range tanklets.Bullets {
-	//	DrawBullet(bullet)
-	//}
+	for _, bullet := range tanklets.Bullets {
+		DrawBullet(bullet)
+	}
 
 	if tanklets.State == tanklets.GAME_WAITING {
 		Text.Print("Connecting", 50, 100, 1)

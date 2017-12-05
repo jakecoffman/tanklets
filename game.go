@@ -99,10 +99,4 @@ func Update(dt float64) {
 	for _, bullet := range Bullets {
 		bullet.Update(dt)
 	}
-
-	Space.Step(dt)
-
-	for _, tank := range Tanks {
-		tank.Turret.SetPosition(tank.Body.Position())
-	}
 }

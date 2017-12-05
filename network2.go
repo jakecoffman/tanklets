@@ -5,11 +5,11 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"net"
 	"sync/atomic"
 	"time"
-	"fmt"
 )
 
 const SimulatedNetworkLatencyMS = 100
@@ -54,6 +54,8 @@ func init() {
 			select {
 			case <-tick:
 				in, out := atomic.LoadUint64(&incomingBytesPerSecond), atomic.LoadUint64(&outgoingBytesPerSecond)
+				atomic.StoreUint64(&incomingBytesPerSecond, 0)
+				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
 
 				if IsServer {
 					fmt.Println("in :", Bytes(in))
@@ -61,8 +63,6 @@ func init() {
 				} else {
 					return
 				}
-				atomic.StoreUint64(&incomingBytesPerSecond, 0)
-				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
 			}
 		}
 	}()

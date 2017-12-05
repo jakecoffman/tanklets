@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	// 60 tickrate
-	step         = 16666666
-	stepDuration = step * time.Nanosecond
+	serverUpdates   = time.Second / 10.0
+	physicsTicks    = 180.0
+	physicsTickrate = 1.0 / physicsTicks
 )
 
 func main() {
@@ -21,35 +21,45 @@ func main() {
 	tanklets.NetInit()
 	defer func() { fmt.Println(tanklets.NetClose()) }()
 
-	tick := time.Tick(stepDuration)
-
 	fmt.Println("Server Running")
-
-	lastFrame := time.Now()
-	var dt time.Duration
-
-	// ticklet updates, runs one physics step, sends update to all players
-	ticklet := func() {
-		currentFrame := time.Now()
-		dt = currentFrame.Sub(lastFrame)
-		lastFrame = currentFrame
-		tanklets.Update(dt.Seconds())
-	}
 
 	go func() {
 		for {
-			time.Sleep(100*time.Millisecond)
-			for _, player := range tanklets.Players {
-				for _, tank := range tanklets.Tanks {
-					tanklets.Send(tank.Location(), player)
+			time.Sleep(serverUpdates)
+			// 58 bytes per n players, 10 times per second = 580n^2
+			for _, tank := range tanklets.Tanks {
+				data, err := tank.Location().MarshalBinary()
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				for _, player := range tanklets.Players {
+					tanklets.SendRaw(data, player)
 				}
 			}
 		}
 	}()
 
 	var hasHadPlayersConnect bool
+	accumulator := 0.
+	lastFrame := time.Now()
+	var dt time.Duration
+
+	physicsTick := time.Tick(time.Second / physicsTicks)
 
 	for {
+		currentFrame := time.Now()
+		dt = currentFrame.Sub(lastFrame)
+		lastFrame = currentFrame
+		accumulator += dt.Seconds()
+
+		if accumulator >= physicsTickrate {
+			tanklets.Space.Step(physicsTickrate)
+			accumulator -= physicsTickrate
+		}
+		tanklets.Update(dt.Seconds())
+
+		// TODO move this check to the disconnect handler
 		if !hasHadPlayersConnect && len(tanklets.Players) > 0 {
 			hasHadPlayersConnect = true
 		}
@@ -58,19 +68,15 @@ func main() {
 			return
 		}
 
-		// ticks get priority, so try to tick first always
-		select {
-		case <-tick:
-			ticklet()
-		default:
-		}
-
-		// handle one incoming or one tick, whichever is next
-		select {
-		case <-tick:
-			ticklet()
-		case incoming := <-tanklets.Incomings:
-			incoming.Handler.Handle(incoming.Addr)
+		// handle all incoming messages this frame
+	net:
+		for {
+			select {
+			case incoming := <-tanklets.Incomings:
+				incoming.Handler.Handle(incoming.Addr)
+			case <-physicsTick:
+				break net
+			}
 		}
 	}
 }

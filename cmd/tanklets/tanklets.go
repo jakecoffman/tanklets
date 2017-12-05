@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
-	"time"
 
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -20,6 +19,8 @@ import (
 const (
 	width  = 800
 	height = 600
+
+	physicsTickrate = 1.0 / 180.0
 )
 
 func main() {
@@ -82,11 +83,11 @@ func main() {
 		tanklets.Send(tanklets.Disconnect{}, tanklets.ServerAddr)
 	}()
 
-	deltaTime := 0.
+	dt := 0.
 	lastFrame := 0.
-
+	startFrame := glfw.GetTime()
 	frames := 0
-	showFps := time.Tick(1 * time.Second)
+	accumulator := 0.
 
 	font := client.GuiInit(window)
 	defer client.GuiDestroy()
@@ -96,31 +97,36 @@ func main() {
 	}
 
 	for !window.ShouldClose() {
-		currentFrame := glfw.GetTime()
-		frames++
-		select {
-		case <-showFps:
-			window.SetTitle(fmt.Sprintf("Tanklets | %d FPS", frames))
-			frames = 0
-		default:
-		}
-		deltaTime = currentFrame - lastFrame
-		lastFrame = currentFrame
 		glfw.PollEvents()
-
 		tanklets.ProcessIncoming()
-		client.ProcessInput(deltaTime)
-		tanklets.Update(deltaTime)
+
+		currentFrame := glfw.GetTime()
+		dt = currentFrame - lastFrame
+		lastFrame = currentFrame
+
+		accumulator += dt
+		for accumulator >= physicsTickrate {
+			tanklets.Space.Step(physicsTickrate)
+			accumulator -= physicsTickrate
+		}
+		client.ProcessInput(dt)
+		tanklets.Update(dt)
 
 		gl.ClearColor(.1, .1, .1, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
-
 		gl.Enable(gl.BLEND)
 		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 		client.Render()
 		client.GuiRender(guiState)
 
 		window.SwapBuffers()
+
+		frames++
+		if frames > 100 {
+			window.SetTitle(fmt.Sprintf("Tanklets | %d FPS", int(float64(frames)/(currentFrame-startFrame))))
+			frames = 0
+			startFrame = currentFrame
+		}
 	}
 
 	client.ResourceManager.Clear()

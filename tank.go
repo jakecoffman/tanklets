@@ -80,10 +80,7 @@ func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 }
 
 func (tank *Tank) Update(dt float64) {
-	// update body
 
-	// update turret
-	tank.Turret.SetPosition(tank.Body.Position())
 }
 
 func (tank *Tank) Shoot(space *cp.Space) {

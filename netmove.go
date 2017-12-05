@@ -10,43 +10,25 @@ import (
 
 // Sent to server only: Move relays inputs related to movement
 type Move struct {
-	PlayerID               PlayerID
-	Turn, Throttle, Turret float64
+	PlayerID               PlayerID // 2 bytes
+	Turn, Throttle, Turret float64  // 24 bytes
 }
 
 const maxTurn = 0.1
 
 func (m *Move) Handle(addr *net.UDPAddr) {
-	if IsServer {
-		var tank *Tank = Tanks[Lookup[addr.String()]]
-		if tank == nil {
-			log.Println("Player not found", addr.String(), Lookup[addr.String()])
-			return
-		}
-
-		if m.Turn > maxTurn {
-			log.Println("Player tried to turn too fast: cheating?", m.Turn)
-			return
-		}
-
-		ApplyMove(tank, m)
-
-		m.PlayerID = tank.ID
-		data, err := m.MarshalBinary()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		for pid, player := range Players {
-			if pid == m.PlayerID {
-				continue
-			}
-			SendRaw(data, player)
-		}
-	} else {
-		tank := Tanks[m.PlayerID]
-		ApplyMove(tank, m)
+	var tank *Tank = Tanks[Lookup[addr.String()]]
+	if tank == nil {
+		log.Println("Player not found", addr.String(), Lookup[addr.String()])
+		return
 	}
+
+	if m.Turn > maxTurn {
+		log.Println("Player tried to turn too fast: cheating?", m.Turn)
+		return
+	}
+
+	ApplyMove(tank, m)
 }
 
 func ApplyMove(tank *Tank, m *Move) {

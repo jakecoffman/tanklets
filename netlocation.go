@@ -7,14 +7,14 @@ import (
 	"github.com/jakecoffman/cp"
 )
 
-// message sent to clients: update location information
+// message sent to clients: update location information (58 bytes)
 type Location struct {
-	ID                     PlayerID
-	X, Y                   float64
-	Vx, Vy                 float64
-	Angle, AngularVelocity float64
+	ID                     PlayerID // 2 bytes
+	X, Y                   float64  // 16 bytes
+	Vx, Vy                 float64  // 16
+	Angle, AngularVelocity float64  // 16
 
-	Turret float64
+	Turret float64 // 8
 }
 
 func (l *Location) Handle(addr *net.UDPAddr) {

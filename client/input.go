@@ -91,12 +91,16 @@ func ProcessInput(dt float64) {
 		Player.Turret.SetPosition(Player.Position())
 	}
 
+	RightDown = false
+	LeftDown = false
+
+	if turn == 0.0 && throttle == 0.0 && turretTurn == 0.0 {
+		return
+	}
+
 	// send all of this input to the server
 	move := tanklets.Move{Turn: turn, Throttle: throttle, Turret: turretTurn}
 	tanklets.Send(move, tanklets.ServerAddr)
-
-	RightDown = false
-	LeftDown = false
 }
 
 func CursorCallback(w *glfw.Window, xpos float64, ypos float64) {

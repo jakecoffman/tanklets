@@ -106,10 +106,12 @@ func main() {
 
 		accumulator += dt
 		for accumulator >= physicsTickrate {
+			myTank := tanklets.Tanks[tanklets.Me]
+			myTank.FixedUpdate(physicsTickrate)
 			tanklets.Space.Step(physicsTickrate)
 			accumulator -= physicsTickrate
 		}
-		client.ProcessInput(dt)
+		client.ProcessInput()
 		tanklets.Update(dt)
 
 		gl.ClearColor(.1, .1, .1, 1)

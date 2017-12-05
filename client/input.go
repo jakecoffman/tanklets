@@ -27,7 +27,8 @@ var identityMatrix = mgl32.Mat4{
 	0, 0, 0, 1,
 }
 
-func ProcessInput(dt float64) {
+
+func ProcessInput() {
 	if tanklets.State != tanklets.GAME_PLAYING {
 		return
 	}
@@ -39,33 +40,16 @@ func ProcessInput(dt float64) {
 		}
 	}
 
-	var turn float64
+	var turn, throttle int8
 	if Keys[glfw.KeyD] {
-		turn = tanklets.TurnSpeed
-		Player.ControlBody.SetAngle(Player.Body.Angle() + tanklets.TurnSpeed)
-		// by applying to the body too, it will allow getting unstuck from corners
-		Player.Body.SetAngle(Player.Body.Angle() + tanklets.TurnSpeed)
+		turn = 1
+	} else if Keys[glfw.KeyA] {
+		turn = -1
 	}
-	if Keys[glfw.KeyA] {
-		turn = -tanklets.TurnSpeed
-		Player.ControlBody.SetAngle(Player.Body.Angle() - tanklets.TurnSpeed)
-		// by applying to the body too, it will allow getting unstuck from corners
-		Player.Body.SetAngle(Player.Body.Angle() - tanklets.TurnSpeed)
-	}
-	var throttle float64
 	if Keys[glfw.KeyW] {
 		throttle = -1
-		Player.ControlBody.SetVelocityVector(Player.Body.Rotation().Rotate(cp.Vector{Y: -tanklets.MaxSpeed}))
 	} else if Keys[glfw.KeyS] {
 		throttle = 1
-		Player.ControlBody.SetVelocityVector(Player.Body.Rotation().Rotate(cp.Vector{Y: tanklets.MaxSpeed}))
-	} else {
-		Player.ControlBody.SetVelocity(0, 0)
-	}
-
-	if LeftClick {
-		Player.Shoot(tanklets.Space)
-		Player.LastShot = time.Now()
 	}
 
 	// update projection and mouse world position
@@ -80,27 +64,30 @@ func ProcessInput(dt float64) {
 		0, 0,
 		800, 600,
 	)
-	var turretTurn float64
+	var turret cp.Vector
 	if err != nil {
 		log.Println(err)
 	} else {
 		mouseWorld := cp.Vector{float64(obj.X()), float64(obj.Y())}
-		mouseDelta := mouseWorld.Sub(Player.Turret.Body.Position())
-		turretTurn = Player.Turret.Rotation().Unrotate(mouseDelta).ToAngle()
-		Player.Turret.SetAngle(Player.Turret.Angle() - turretTurn)
-		Player.Turret.SetPosition(Player.Position())
+		turret = mouseWorld.Sub(Player.Turret.Body.Position())
+	}
+
+	if LeftClick {
+		tanklets.Send(tanklets.Shoot{}, tanklets.ServerAddr)
+		Player.LastShot = time.Now()
 	}
 
 	RightDown = false
 	LeftDown = false
 
-	if turn == 0.0 && throttle == 0.0 && turretTurn == 0.0 {
+	// TODO separate turret aim into a message sent less often since it's never 0 now
+	if turn == 0.0 && throttle == 0.0 && turret.X == 0 && turret.Y == 0 {
 		return
 	}
 
 	// send all of this input to the server
-	move := tanklets.Move{Turn: turn, Throttle: throttle, Turret: turretTurn}
-	tanklets.Send(move, tanklets.ServerAddr)
+	myTank.NextMove = tanklets.Move{Turn: turn, Throttle: throttle, TurretX: turret.X, TurretY: turret.Y}
+	tanklets.Send(myTank.NextMove, tanklets.ServerAddr)
 }
 
 func CursorCallback(w *glfw.Window, xpos float64, ypos float64) {

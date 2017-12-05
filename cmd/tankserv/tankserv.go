@@ -23,29 +23,13 @@ func main() {
 
 	fmt.Println("Server Running")
 
-	go func() {
-		for {
-			time.Sleep(serverUpdates)
-			// 58 bytes per n players, 10 times per second = 580n^2
-			for _, tank := range tanklets.Tanks {
-				data, err := tank.Location().MarshalBinary()
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				for _, player := range tanklets.Players {
-					tanklets.SendRaw(data, player)
-				}
-			}
-		}
-	}()
-
 	var hasHadPlayersConnect bool
 	accumulator := 0.
 	lastFrame := time.Now()
 	var dt time.Duration
 
 	physicsTick := time.Tick(time.Second / physicsTicks)
+	updateTick := time.Tick(serverUpdates)
 
 	for {
 		currentFrame := time.Now()
@@ -54,6 +38,9 @@ func main() {
 		accumulator += dt.Seconds()
 
 		if accumulator >= physicsTickrate {
+			for _, tank := range tanklets.Tanks {
+				tank.FixedUpdate(physicsTickrate)
+			}
 			tanklets.Space.Step(physicsTickrate)
 			accumulator -= physicsTickrate
 		}
@@ -76,6 +63,18 @@ func main() {
 				incoming.Handler.Handle(incoming.Addr)
 			case <-physicsTick:
 				break net
+			case <-updateTick:
+				// 58 bytes per n players, 10 times per second = 580n^2
+				for _, tank := range tanklets.Tanks {
+					data, err := tank.Location().MarshalBinary()
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+					for _, player := range tanklets.Players {
+						tanklets.SendRaw(data, player)
+					}
+				}
 			}
 		}
 	}

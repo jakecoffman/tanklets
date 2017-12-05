@@ -17,7 +17,7 @@ const (
 	TurretWidth  = 4
 	TurretHeight = 15
 
-	TurnSpeed = .05
+	TurnSpeed = .5
 	MaxSpeed  = 60
 
 	ShotCooldown = 333 * time.Millisecond
@@ -39,6 +39,8 @@ type Tank struct {
 	LastShot time.Time
 
 	Destroyed bool
+
+	NextMove Move
 }
 
 type Turret struct {
@@ -83,8 +85,32 @@ func (tank *Tank) Update(dt float64) {
 
 }
 
-func (tank *Tank) Shoot(space *cp.Space) {
-	Send(Shoot{}, ServerAddr)
+func (tank *Tank) FixedUpdate(dt float64) {
+	if tank.Destroyed {
+		return
+	}
+
+	m := tank.NextMove
+	if m.Turn != 0 {
+		tank.ControlBody.SetAngle(tank.Body.Angle() + float64(m.Turn)*TurnSpeed)
+	}
+
+	if m.Throttle != 0 {
+		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(m.Throttle) * MaxSpeed}))
+	} else {
+		tank.ControlBody.SetVelocity(0, 0)
+	}
+
+	if m.TurretX != 0 && m.TurretY != 0 {
+		angle := tank.Turret.Rotation().Unrotate(cp.Vector{m.TurretX, m.TurretY}).ToAngle()
+		tank.Turret.SetAngle(tank.Turret.Angle() - angle)
+		tank.Turret.SetPosition(tank.Body.Position())
+	}
+
+	m.Turn = 0
+	m.Throttle = 0
+	m.TurretX = 0
+	m.TurretY = 0
 }
 
 // gather important data to transmit

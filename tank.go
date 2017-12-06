@@ -17,7 +17,7 @@ const (
 	TurretWidth  = 4
 	TurretHeight = 15
 
-	TurnSpeed = .5
+	TurnSpeed = 3
 	MaxSpeed  = 60
 
 	ShotCooldown = 333 * time.Millisecond
@@ -41,6 +41,7 @@ type Tank struct {
 	Destroyed bool
 
 	NextMove Move
+	LastMove Move
 }
 
 type Turret struct {
@@ -64,12 +65,12 @@ func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tankShape.UserData = tank
 
 	pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
-	pivot.SetMaxBias(0)      // prevent tanks from snapping together
+	pivot.SetMaxBias(0)      // prevent joint from sucking the tank in
 	pivot.SetMaxForce(10000) // prevent tanks from spinning crazy
 
 	Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
 	//gear.SetErrorBias(0) // idk
-	//gear.SetMaxBias(5) // idk
+	//gear.SetMaxBias(1.2) // idk
 	//gear.SetMaxForce(50000) // don't set or tank will go through walls
 
 	tank.Turret.Body = Space.AddBody(cp.NewKinematicBody())
@@ -91,14 +92,12 @@ func (tank *Tank) FixedUpdate(dt float64) {
 	}
 
 	m := tank.NextMove
-	if m.Turn != 0 {
-		tank.ControlBody.SetAngle(tank.Body.Angle() + float64(m.Turn)*TurnSpeed)
+	if !(m.Turn == 0 && tank.LastMove.Turn == 0) {
+		tank.ControlBody.SetAngularVelocity(float64(m.Turn) * TurnSpeed)
 	}
 
-	if m.Throttle != 0 {
+	if !(m.Throttle == 0 && tank.LastMove.Throttle == 0) {
 		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(m.Throttle) * MaxSpeed}))
-	} else {
-		tank.ControlBody.SetVelocity(0, 0)
 	}
 
 	if m.TurretX != 0 && m.TurretY != 0 {
@@ -107,10 +106,7 @@ func (tank *Tank) FixedUpdate(dt float64) {
 		tank.Turret.SetPosition(tank.Body.Position())
 	}
 
-	m.Turn = 0
-	m.Throttle = 0
-	m.TurretX = 0
-	m.TurretY = 0
+	tank.LastMove = tank.NextMove
 }
 
 // gather important data to transmit

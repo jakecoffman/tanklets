@@ -2,8 +2,11 @@ package tanklets
 
 import (
 	"bytes"
-	"net"
 	"log"
+	"net"
+
+	"math"
+
 	"github.com/jakecoffman/cp"
 )
 
@@ -28,18 +31,26 @@ func (l *Location) Handle(addr *net.UDPAddr) {
 		log.Println("Client", Me, "-- Player with ID", l.ID, "not found")
 		return
 	}
-	// ignore if the change is insignificant
-	//if player.Body.Position().Sub(cp.Vector{l.X, l.Y}).LengthSq() > 4 {
-		player.Body.SetPosition(cp.Vector{l.X, l.Y})
-	//}
-	player.Body.SetVelocity(l.Vx, l.Vy)
+	pos := player.Body.Position()
+	newPos := cp.Vector{l.X, l.Y}
+
+	if pos.Distance(newPos) > 1 {
+		player.Body.SetPosition(newPos)
+	} else {
+		player.Body.SetPosition(pos.Lerp(newPos, 0.5))
+	}
+
+	angle := player.ControlBody.Angle()
+	if math.Abs(angle-l.Angle) > 5 {
+		player.ControlBody.SetAngle(l.Angle)
+	} else {
+		player.ControlBody.SetAngle(cp.Lerp(l.Angle, angle, 0.5))
+	}
+
+	player.Turret.SetPosition(player.Body.Position())
 	player.ControlBody.SetVelocity(l.Vx, l.Vy)
-	player.Body.SetAngle(l.Angle)
-	player.ControlBody.SetAngle(l.Angle)
-	player.Body.SetAngularVelocity(l.AngularVelocity)
 	player.ControlBody.SetAngularVelocity(l.AngularVelocity)
 	player.Turret.Body.SetAngle(l.Turret)
-	player.Turret.SetPosition(player.Body.Position())
 }
 
 func (l *Location) MarshalBinary() ([]byte, error) {

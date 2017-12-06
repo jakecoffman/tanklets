@@ -30,6 +30,15 @@ func main() {
 
 	physicsTick := time.Tick(time.Second / physicsTicks)
 	updateTick := time.Tick(serverUpdates)
+	pingTick := time.Tick(1*time.Second)
+	go func() {
+		for range pingTick {
+			ping := tanklets.Ping{T: time.Now()}
+			for _, addr := range tanklets.Players {
+				tanklets.Send(ping, addr)
+			}
+		}
+	}()
 
 	for {
 		currentFrame := time.Now()
@@ -55,6 +64,8 @@ func main() {
 			return
 		}
 
+
+
 		// handle all incoming messages this frame
 	net:
 		for {
@@ -62,6 +73,7 @@ func main() {
 			case incoming := <-tanklets.Incomings:
 				incoming.Handler.Handle(incoming.Addr)
 			case <-physicsTick:
+				// time to do a physics tick
 				break net
 			case <-updateTick:
 				// 58 bytes per n players, 10 times per second = 580n^2

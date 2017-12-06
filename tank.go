@@ -40,8 +40,8 @@ type Tank struct {
 
 	Destroyed bool
 
-	NextMove Move
-	LastMove Move
+	NextMove, LastMove Move
+	Ping time.Duration // tank ping in ns
 }
 
 type Turret struct {

@@ -5,11 +5,11 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/binary"
-	"fmt"
 	"log"
 	"net"
 	"sync/atomic"
 	"time"
+	"fmt"
 )
 
 const SimulatedNetworkLatencyMS = 100
@@ -22,6 +22,7 @@ const (
 	SHOOT
 	LOCATION
 	DAMAGE
+	PING
 )
 
 var ServerAddr = &net.UDPAddr{
@@ -48,20 +49,20 @@ var tick = time.Tick(1 * time.Second)
 var incomingBytesPerSecond uint64
 var outgoingBytesPerSecond uint64
 
+var NetworkIn, NetworkOut uint64
+
 func init() {
 	go func() {
 		for {
 			select {
 			case <-tick:
-				in, out := atomic.LoadUint64(&incomingBytesPerSecond), atomic.LoadUint64(&outgoingBytesPerSecond)
+				NetworkIn, NetworkOut := atomic.LoadUint64(&incomingBytesPerSecond), atomic.LoadUint64(&outgoingBytesPerSecond)
 				atomic.StoreUint64(&incomingBytesPerSecond, 0)
 				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
 
 				if IsServer {
-					fmt.Println("in :", Bytes(in))
-					fmt.Println("out:", Bytes(out))
-				} else {
-					return
+					fmt.Println("in :", Bytes(NetworkIn))
+					fmt.Println("out:", Bytes(NetworkOut))
 				}
 			}
 		}
@@ -137,6 +138,16 @@ func Recv() {
 			handler = &Location{}
 		case DAMAGE:
 			handler = &Damage{}
+		case PING:
+			handler := &Ping{}
+			// just handle ping right now
+			err = handler.UnmarshalBinary(data)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			handler.Handle(addr)
+			continue
 		default:
 			log.Println("Unkown message type", data[0])
 			continue

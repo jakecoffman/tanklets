@@ -82,6 +82,10 @@ func (bullet *Bullet) Destroy(now bool) {
 	// additions and removals can't be done in a normal callback.
 	// Schedule a post step callback to do it.
 	Space.AddPostStepCallback(func(space *cp.Space, a interface{}, b interface{}) {
+		if bullet.Shape == nil {
+			// this fixes a crash when a tank is touching another and shoots it
+			return
+		}
 		bullet.Shape.UserData = nil
 		space.RemoveShape(bullet.Shape)
 		space.RemoveBody(bullet.Body)

@@ -1,9 +1,9 @@
 package tanklets
 
 import (
-	"bytes"
 	"log"
 	"net"
+	"github.com/jakecoffman/binserializer"
 )
 
 // Sent to server only: Move relays inputs related to movement
@@ -13,7 +13,7 @@ type Move struct {
 }
 
 func (m *Move) Handle(addr *net.UDPAddr) {
-	var tank *Tank = Tanks[Lookup[addr.String()]]
+	tank := Tanks[Lookup[addr.String()]]
 	if tank == nil {
 		log.Println("Player not found", addr.String(), Lookup[addr.String()])
 		return
@@ -29,13 +29,25 @@ func (m *Move) Handle(addr *net.UDPAddr) {
 }
 
 func (m Move) MarshalBinary() ([]byte, error) {
-	buf := bytes.NewBuffer([]byte{MOVE})
-	fields := []interface{}{&m.Turn, &m.Throttle, &m.TurretX, &m.TurretY}
-	return Marshal(fields, buf)
+	buf := binserializer.NewBuffer(19)
+	buf.WriteByte(MOVE)
+
+	buf.WriteInt8(m.Turn)
+	buf.WriteInt8(m.Throttle)
+
+	buf.WriteFloat64(m.TurretX)
+	buf.WriteFloat64(m.TurretY)
+	return buf.Bytes()
 }
 
 func (m *Move) UnmarshalBinary(b []byte) error {
-	reader := bytes.NewReader(b[1:])
-	fields := []interface{}{&m.Turn, &m.Throttle, &m.TurretX, &m.TurretY}
-	return Unmarshal(fields, reader)
+	buf := binserializer.NewBufferFromBytes(b)
+	_ = buf.GetByte()
+
+	m.Turn = buf.GetInt8()
+	m.Throttle = buf.GetInt8()
+
+	m.TurretX = buf.GetFloat64()
+	m.TurretY = buf.GetFloat64()
+	return buf.Error()
 }

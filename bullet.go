@@ -122,9 +122,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 
 		bullet.Bounce = 100
 		shot := bullet.Location()
-		for _, p := range Players {
-			Send(shot, p)
-		}
+		Players.SendAll(shot)
 	case *Bullet:
 		bullet2 := b.UserData.(*Bullet)
 
@@ -136,10 +134,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 
 		shot1 := bullet.Location()
 		shot2 := bullet2.Location()
-		for _, p := range Players {
-			Send(shot1, p)
-			Send(shot2, p)
-		}
+		Players.SendAll(shot1, shot2)
 	default:
 		// This will bounce over anything that isn't a tank or bullet, probably check for wall here?
 
@@ -157,9 +152,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 		}
 
 		shot := bullet.Location()
-		for _, p := range Players {
-			Send(shot, p)
-		}
+		Players.SendAll(shot)
 	}
 	return false
 }

@@ -1,9 +1,9 @@
 package tanklets
 
 import (
-	"encoding/binary"
 	"log"
 	"net"
+	"github.com/jakecoffman/binserializer"
 )
 
 type Damage struct {
@@ -24,13 +24,15 @@ func (d *Damage) Handle(addr *net.UDPAddr) {
 }
 
 func (d Damage) MarshalBinary() ([]byte, error) {
-	buf := make([]byte, 3)
-	buf[0] = DAMAGE
-	binary.BigEndian.PutUint16(buf[1:3], uint16(d.ID))
-	return buf, nil
+	buf := binserializer.NewBuffer(3)
+	buf.WriteByte(DAMAGE)
+	buf.WriteUint16(uint16(d.ID))
+	return buf.Bytes()
 }
 
-func (d *Damage) UnmarshalBinary(buf []byte) error {
-	d.ID = PlayerID(binary.BigEndian.Uint16(buf[1:3]))
+func (d *Damage) UnmarshalBinary(b []byte) error {
+	buf := binserializer.NewBufferFromBytes(b)
+	_ = buf.GetByte()
+	d.ID = PlayerID(buf.GetUint16())
 	return nil
 }

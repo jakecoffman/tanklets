@@ -1,13 +1,12 @@
 package tanklets
 
 import (
-	"bytes"
 	"log"
 	"net"
-
 	"math"
 
 	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/binserializer"
 )
 
 // message sent to clients: update location information (58 bytes)
@@ -54,14 +53,29 @@ func (l *Location) Handle(addr *net.UDPAddr) {
 }
 
 func (l *Location) MarshalBinary() ([]byte, error) {
-	buf := bytes.NewBuffer([]byte{LOCATION, byte(l.ID)})
-	fields := []interface{}{&l.X, &l.Y, &l.Vx, &l.Vy, &l.Angle, &l.AngularVelocity, &l.Turret}
-	return Marshal(fields, buf)
+	buf := binserializer.NewBuffer(59)
+	buf.WriteByte(LOCATION)
+	buf.WriteUint16(uint16(l.ID))
+	buf.WriteFloat64(l.X)
+	buf.WriteFloat64(l.Y)
+	buf.WriteFloat64(l.Vx)
+	buf.WriteFloat64(l.Vy)
+	buf.WriteFloat64(l.Angle)
+	buf.WriteFloat64(l.AngularVelocity)
+	buf.WriteFloat64(l.Turret)
+	return buf.Bytes()
 }
 
 func (l *Location) UnmarshalBinary(b []byte) error {
-	l.ID = PlayerID(b[1])
-	reader := bytes.NewReader(b[2:])
-	fields := []interface{}{&l.X, &l.Y, &l.Vx, &l.Vy, &l.Angle, &l.AngularVelocity, &l.Turret}
-	return Unmarshal(fields, reader)
+	buf := binserializer.NewBufferFromBytes(b)
+	_ = buf.GetByte()
+	l.ID = PlayerID(buf.GetUint16())
+	l.X = buf.GetFloat64()
+	l.Y = buf.GetFloat64()
+	l.Vx = buf.GetFloat64()
+	l.Vy = buf.GetFloat64()
+	l.Angle = buf.GetFloat64()
+	l.AngularVelocity = buf.GetFloat64()
+	l.Turret = buf.GetFloat64()
+	return buf.Error()
 }

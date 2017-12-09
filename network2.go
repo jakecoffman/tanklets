@@ -2,9 +2,7 @@ package tanklets
 
 import (
 	"bufio"
-	"bytes"
 	"encoding"
-	"encoding/binary"
 	"log"
 	"net"
 	"sync/atomic"
@@ -12,7 +10,7 @@ import (
 	"fmt"
 )
 
-const SimulatedNetworkLatencyMS = 100
+var SimulatedNetworkLatencyMS = 100
 
 // Message type IDs
 const (
@@ -56,7 +54,8 @@ func init() {
 		for {
 			select {
 			case <-tick:
-				NetworkIn, NetworkOut := atomic.LoadUint64(&incomingBytesPerSecond), atomic.LoadUint64(&outgoingBytesPerSecond)
+				NetworkIn = atomic.LoadUint64(&incomingBytesPerSecond)
+				NetworkOut = atomic.LoadUint64(&outgoingBytesPerSecond)
 				atomic.StoreUint64(&incomingBytesPerSecond, 0)
 				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
 
@@ -202,6 +201,7 @@ func ProcessOutgoingServer() {
 	var outgoing Outgoing
 	var n int
 	var err error
+
 	for {
 		outgoing = <-Outgoings
 		n, err = udpConn.WriteToUDP(outgoing.data, outgoing.addr)
@@ -231,27 +231,4 @@ type Handler interface {
 	Handle(addr *net.UDPAddr)
 	encoding.BinaryMarshaler
 	encoding.BinaryUnmarshaler
-}
-
-func Marshal(fields []interface{}, buf *bytes.Buffer) ([]byte, error) {
-	var err error
-	for _, field := range fields {
-		err = binary.Write(buf, binary.LittleEndian, field)
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-	}
-	return buf.Bytes(), nil
-}
-
-func Unmarshal(fields []interface{}, reader *bytes.Reader) error {
-	for _, field := range fields {
-		err := binary.Read(reader, binary.LittleEndian, field)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-	}
-	return nil
 }

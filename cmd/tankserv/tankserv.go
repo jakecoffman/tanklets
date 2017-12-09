@@ -34,9 +34,7 @@ func main() {
 	go func() {
 		for range pingTick {
 			ping := tanklets.Ping{T: time.Now()}
-			for _, addr := range tanklets.Players {
-				tanklets.Send(ping, addr)
-			}
+			tanklets.Players.SendAll(ping)
 		}
 	}()
 
@@ -56,15 +54,13 @@ func main() {
 		tanklets.Update(dt.Seconds())
 
 		// TODO move this check to the disconnect handler
-		if !hasHadPlayersConnect && len(tanklets.Players) > 0 {
+		if !hasHadPlayersConnect && tanklets.Players.Len() > 0 {
 			hasHadPlayersConnect = true
 		}
-		if len(tanklets.Players) == 0 && hasHadPlayersConnect {
+		if tanklets.Players.Len() == 0 && hasHadPlayersConnect {
 			fmt.Println("All players have disconnected, shutting down")
 			return
 		}
-
-
 
 		// handle all incoming messages this frame
 	net:
@@ -78,14 +74,7 @@ func main() {
 			case <-updateTick:
 				// 58 bytes per n players, 10 times per second = 580n^2
 				for _, tank := range tanklets.Tanks {
-					data, err := tank.Location().MarshalBinary()
-					if err != nil {
-						log.Println(err)
-						continue
-					}
-					for _, player := range tanklets.Players {
-						tanklets.SendRaw(data, player)
-					}
+					tanklets.Players.SendAll(tank.Location())
 				}
 			}
 		}

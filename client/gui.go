@@ -44,6 +44,11 @@ func GuiRender(state *State) {
 		{
 			nk.NkLabel(ctx, fmt.Sprint("ping: ", tanklets.MyPing), nk.TextLeft)
 		}
+		nk.NkLayoutRowDynamic(ctx, 20, 1)
+		{
+			nk.NkLabel(ctx, fmt.Sprint("in: ", tanklets.Bytes(tanklets.NetworkIn)), nk.TextLeft)
+			nk.NkLabel(ctx, fmt.Sprint("out: ", tanklets.Bytes(tanklets.NetworkOut)), nk.TextLeft)
+		}
 		//nk.NkLayoutRowStatic(ctx, 30, 80, 1)
 		//{
 		//	if nk.NkButtonLabel(ctx, "button") > 0 {

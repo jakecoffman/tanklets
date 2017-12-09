@@ -1,15 +1,15 @@
 package tanklets
 
 import (
-	"bytes"
-	"encoding/binary"
 	"log"
 	"net"
 	"time"
 
 	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/binserializer"
 )
 
+// 54 bytes
 type Shoot struct {
 	PlayerID PlayerID
 	BulletID BulletID
@@ -23,7 +23,7 @@ type Shoot struct {
 func (s *Shoot) Handle(addr *net.UDPAddr) {
 	if IsServer {
 		id := Lookup[addr.String()]
-		player := Players[id]
+		player := Players.Get(id)
 		if player == nil {
 			log.Println("Player not found", addr.String(), Lookup[addr.String()])
 			return
@@ -46,9 +46,7 @@ func (s *Shoot) Handle(addr *net.UDPAddr) {
 		//bullet.Shape.SetFilter(cp.NewShapeFilter(uint(player.ID), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
 
 		shot := bullet.Location()
-		for _, p := range Players {
-			Send(shot, p)
-		}
+		Players.SendAll(shot)
 	} else {
 		firedBy := Tanks[s.PlayerID]
 		bullet := Bullets[s.BulletID]
@@ -72,28 +70,39 @@ func (s *Shoot) Handle(addr *net.UDPAddr) {
 
 func (s Shoot) MarshalBinary() ([]byte, error) {
 	if IsServer {
-		buf := bytes.NewBuffer([]byte{SHOOT})
-		fields := []interface{}{
-			&s.PlayerID, &s.BulletID, &s.Bounce, &s.X, &s.Y, &s.Vx, &s.Vy, &s.Angle,
-		}
-		return Marshal(fields, buf)
+		buf := binserializer.NewBuffer(55)
+		buf.WriteByte(SHOOT)
+		buf.WriteUint16(uint16(s.PlayerID))
+		buf.WriteUint64(uint64(s.BulletID))
+		buf.WriteInt16(s.Bounce)
+		buf.WriteFloat64(s.X)
+		buf.WriteFloat64(s.Y)
+		buf.WriteFloat64(s.Vx)
+		buf.WriteFloat64(s.Vy)
+		buf.WriteFloat64(s.Angle)
+		return buf.Bytes()
 	} else {
-		buf := make([]byte, 3)
-		buf[0] = SHOOT
-		binary.BigEndian.PutUint16(buf[1:3], uint16(s.PlayerID))
-		return buf, nil
+		buf := binserializer.NewBuffer(3)
+		buf.WriteByte(SHOOT)
+		buf.WriteUint16(uint16(s.PlayerID))
+		return buf.Bytes()
 	}
 }
 
-func (s *Shoot) UnmarshalBinary(buf []byte) error {
+func (s *Shoot) UnmarshalBinary(b []byte) error {
+	buf := binserializer.NewBufferFromBytes(b)
+	_ = buf.GetByte()
 	if IsServer {
-		s.PlayerID = PlayerID(binary.BigEndian.Uint16(buf[1:3]))
-		return nil
+		s.PlayerID = PlayerID(buf.GetUint16())
 	} else {
-		reader := bytes.NewReader(buf[1:])
-		fields := []interface{}{
-			&s.PlayerID, &s.BulletID, &s.Bounce, &s.X, &s.Y, &s.Vx, &s.Vy, &s.Angle,
-		}
-		return Unmarshal(fields, reader)
+		s.PlayerID = PlayerID(buf.GetUint16())
+		s.BulletID = BulletID(buf.GetUint64())
+		s.Bounce = buf.GetInt16()
+		s.X = buf.GetFloat64()
+		s.Y = buf.GetFloat64()
+		s.Vx = buf.GetFloat64()
+		s.Vy = buf.GetFloat64()
+		s.Angle = buf.GetFloat64()
 	}
+	return buf.Error()
 }

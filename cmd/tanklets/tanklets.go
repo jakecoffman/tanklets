@@ -107,6 +107,9 @@ func main() {
 		accumulator += dt
 		for accumulator >= physicsTickrate {
 			myTank := tanklets.Tanks[tanklets.Me]
+			if myTank == nil {
+				break
+			}
 			myTank.FixedUpdate(physicsTickrate)
 			tanklets.Space.Step(physicsTickrate)
 			accumulator -= physicsTickrate

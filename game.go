@@ -1,8 +1,6 @@
 package tanklets
 
 import (
-	"net"
-
 	"github.com/jakecoffman/cp"
 )
 
@@ -13,14 +11,12 @@ var (
 	Me    PlayerID
 	State int
 
-	// server only
-	Players = map[PlayerID]*net.UDPAddr{} // represent players separately for, e.g. disconnects
-	Lookup  = map[string]PlayerID{}       // look up Addr
-
 	// both client and server (TODO: Server needs to sync some of this still)
 	Tanks         = map[PlayerID]*Tank{}
 	Space         *cp.Space
 	Width, Height int
+
+	Box *cp.Body
 )
 
 // Game state
@@ -33,11 +29,6 @@ const (
 // Collision types
 const (
 	COLLISION_TYPE_BULLET = 1
-)
-
-// Collision categories
-const (
-	_ = iota
 )
 
 var PLAYER_MASK_BIT uint = 1 << 31
@@ -70,16 +61,16 @@ func NewGame(width, height float64) {
 	}
 
 	const boxSize = 25
-	boxBody := space.AddBody(cp.NewBody(1, cp.MomentForBox(1, boxSize, boxSize)))
-	boxShape := space.AddShape(cp.NewBox(boxBody, boxSize, boxSize, 0))
-	boxBody.SetPosition(cp.Vector{150, 150})
+	Box = space.AddBody(cp.NewBody(1, cp.MomentForBox(1, boxSize, boxSize)))
+	boxShape := space.AddShape(cp.NewBox(Box, boxSize, boxSize, 0))
+	Box.SetPosition(cp.Vector{150, 150})
 	boxShape.SetFriction(1)
 
-	pivot := space.AddConstraint(cp.NewPivotJoint2(space.StaticBody, boxBody, cp.Vector{}, cp.Vector{}))
+	pivot := space.AddConstraint(cp.NewPivotJoint2(space.StaticBody, Box, cp.Vector{}, cp.Vector{}))
 	pivot.SetMaxBias(0)       // disable joint correction
 	pivot.SetMaxForce(1000.0) // emulate linear friction
 
-	gear := space.AddConstraint(cp.NewGearJoint(space.StaticBody, boxBody, 0.0, 1.0))
+	gear := space.AddConstraint(cp.NewGearJoint(space.StaticBody, Box, 0.0, 1.0))
 	gear.SetMaxBias(0)
 	gear.SetMaxForce(5000.0) // emulate angular friction
 

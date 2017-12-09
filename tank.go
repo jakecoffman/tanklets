@@ -142,7 +142,5 @@ func (tank *Tank) Damage(bullet *Bullet) {
 
 	fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
 
-	for _, p := range Players {
-		Send(Damage{tank.ID}, p)
-	}
+	Players.SendAll(Damage{tank.ID})
 }

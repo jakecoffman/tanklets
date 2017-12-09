@@ -1,13 +1,13 @@
 package tanklets
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"net"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/binserializer"
 )
 
 var curId PlayerID = 1
@@ -43,7 +43,7 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 		// tell this player where they are
 		Send(loc, addr)
 		join := Join{tank.ID, false, tank.Color}
-		for id, p := range Players {
+		Players.Each(func (id PlayerID, p *net.UDPAddr) {
 			// tell all players about this player
 			Send(join, p)
 			Send(loc, p)
@@ -51,9 +51,9 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 			thisTank := Tanks[id]
 			Send(Join{id, false, thisTank.Color}, addr)
 			Send(thisTank.Location(), addr)
-		}
+		})
 		Lookup[addr.String()] = tank.ID
-		Players[curId] = addr
+		Players.Put(curId, addr)
 		curId++
 		colorCursor++
 	} else {
@@ -70,25 +70,29 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 }
 
 func (j Join) MarshalBinary() ([]byte, error) {
-	buf := make([]byte, 17)
-	buf[0] = JOIN
-	binary.BigEndian.PutUint16(buf[1:3], uint16(j.ID))
+	buf := binserializer.NewBuffer(17)
+	buf.WriteByte(JOIN)
 	if j.You {
-		binary.BigEndian.PutUint16(buf[3:5], uint16(1))
+		buf.WriteByte(1)
 	} else {
-		binary.BigEndian.PutUint16(buf[3:5], uint16(0))
+		buf.WriteByte(0)
 	}
-	binary.BigEndian.PutUint32(buf[5:9], uint32(j.Color.X()))
-	binary.BigEndian.PutUint32(buf[9:13], uint32(j.Color.Y()))
-	binary.BigEndian.PutUint32(buf[13:17], uint32(j.Color.Z()))
-	return buf, nil
+	buf.WriteUint16(uint16(j.ID))
+	buf.WriteFloat32(j.Color.X())
+	buf.WriteFloat32(j.Color.Y())
+	buf.WriteFloat32(j.Color.Z())
+	return buf.Bytes()
 }
 
-func (j *Join) UnmarshalBinary(buf []byte) error {
-	j.ID = PlayerID(binary.BigEndian.Uint16(buf[1:3]))
-	j.You = binary.BigEndian.Uint16(buf[3:5]) == 1
-	j.Color[0] = float32(binary.BigEndian.Uint32(buf[5:9]))
-	j.Color[1] = float32(binary.BigEndian.Uint32(buf[9:13]))
-	j.Color[2] = float32(binary.BigEndian.Uint32(buf[13:17]))
-	return nil
+func (j *Join) UnmarshalBinary(bytes []byte) error {
+	buf := binserializer.NewBufferFromBytes(bytes)
+	_ = buf.GetByte()
+	if buf.GetByte() == 1 {
+		j.You = true
+	}
+	j.ID = PlayerID(buf.GetUint16())
+	j.Color[0] = buf.GetFloat32()
+	j.Color[1] = buf.GetFloat32()
+	j.Color[2] = buf.GetFloat32()
+	return buf.Error()
 }

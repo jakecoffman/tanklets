@@ -103,8 +103,8 @@ func NetClose() error {
 
 // Recv runs in a goroutine and un-marshals incoming data, queuing it up for ProcessIncoming to handle
 func Recv() {
+	data := make([]byte, 2048)
 	for {
-		data := make([]byte, 2048)
 		var addr *net.UDPAddr
 		var err error
 		var n int

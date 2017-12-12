@@ -11,16 +11,12 @@ import (
 
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/golang-ui/nuklear/nk"
-	"github.com/jakecoffman/tanklets"
 	"github.com/jakecoffman/tanklets/client"
 )
 
 const (
 	width  = 800
 	height = 600
-
-	physicsTickrate = 1.0 / 180.0
 )
 
 func main() {
@@ -71,58 +67,35 @@ func main() {
 		panic(err)
 	}
 
-	tanklets.NewGame(width, height)
 	client.Init(width, height)
-
-	tanklets.NetInit()
-
-	fmt.Println("Sending JOIN command")
-	tanklets.Send(tanklets.Join{}, tanklets.ServerAddr)
-	defer func() {
-		fmt.Println("Sending DISCONNECT")
-		tanklets.Send(tanklets.Disconnect{}, tanklets.ServerAddr)
-	}()
 
 	dt := 0.
 	lastFrame := 0.
 	startFrame := glfw.GetTime()
 	frames := 0
-	accumulator := 0.
 
 	font := client.GuiInit(window)
 	defer client.GuiDestroy()
 
-	guiState := &client.State{
-		BgColor: nk.NkRgba(28, 48, 62, 255),
-	}
+	scene := client.Scene(client.NewMainMenuScene())
 
 	for !window.ShouldClose() {
 		glfw.PollEvents()
-		tanklets.ProcessIncoming()
 
 		currentFrame := glfw.GetTime()
 		dt = currentFrame - lastFrame
 		lastFrame = currentFrame
 
-		accumulator += dt
-		for accumulator >= physicsTickrate {
-			myTank := tanklets.Tanks[tanklets.Me]
-			if myTank == nil {
-				break
-			}
-			myTank.FixedUpdate(physicsTickrate)
-			tanklets.Space.Step(physicsTickrate)
-			accumulator -= physicsTickrate
-		}
-		client.ProcessInput()
-		tanklets.Update(dt)
+		scene.Update(dt)
 
 		gl.ClearColor(.1, .1, .1, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
-		gl.Enable(gl.BLEND)
-		gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-		client.Render()
-		client.GuiRender(guiState)
+		scene.Render()
+
+		if newScene := scene.Transition(); newScene != nil {
+			scene.Destroy()
+			scene = newScene
+		}
 
 		window.SwapBuffers()
 

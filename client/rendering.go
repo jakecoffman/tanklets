@@ -2,7 +2,6 @@ package client
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/jakecoffman/tanklets"
 )
 
 var (
@@ -21,6 +20,8 @@ var (
 	turretTexture *Texture2D
 	bulletTexture *Texture2D
 )
+
+var projection mgl32.Mat4
 
 func Init(width, height float32) {
 	// shaders
@@ -41,29 +42,4 @@ func Init(width, height float32) {
 	tankTexture = ResourceManager.LoadTexture("textures/tank.png", "tank")
 	turretTexture = ResourceManager.LoadTexture("textures/turret.png", "turret")
 	bulletTexture = ResourceManager.LoadTexture("textures/bullet.png", "bullet")
-}
-
-var projection mgl32.Mat4
-
-func Render() {
-	Renderer.SetProjection(projection)
-
-	// useful for debugging space issues
-	SpaceRenderer.SetProjection(projection)
-	SpaceRenderer.DrawSpace(tanklets.Space)
-
-	for _, tank := range tanklets.Tanks {
-		DrawTank(tank)
-	}
-
-	for _, bullet := range tanklets.Bullets {
-		DrawBullet(bullet)
-	}
-
-	if tanklets.State == tanklets.GAME_WAITING {
-		Text.Print("Connecting", 50, 100, 1)
-	}
-	if tanklets.State == tanklets.GAME_DEAD {
-		Text.Print("You died", 50, 50, 1)
-	}
 }

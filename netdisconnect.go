@@ -13,7 +13,7 @@ type Disconnect struct {
 
 func (d Disconnect) Handle(addr *net.UDPAddr) {
 	if IsServer {
-		fmt.Println("SERVER: Player", d.ID, "has disonnceted")
+		fmt.Println("SERVER: Player", d.ID, "has disconnceted")
 
 		playerID := Lookup[addr.String()]
 		player := Players.Get(playerID)

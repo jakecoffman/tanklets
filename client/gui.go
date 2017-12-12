@@ -31,7 +31,7 @@ func GuiDestroy() {
 	nk.NkPlatformShutdown()
 }
 
-func GuiRender(state *State) {
+func GuiRender() {
 	nk.NkPlatformNewFrame()
 
 	// Layout

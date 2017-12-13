@@ -4,6 +4,7 @@ import (
 	"github.com/jakecoffman/tanklets"
 	"fmt"
 	"github.com/go-gl/gl/v3.2-core/gl"
+	"github.com/golang-ui/nuklear/nk"
 )
 
 type GameScene struct {
@@ -43,7 +44,7 @@ func (g *GameScene) Update(dt float64) {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
 
-func (g *GameScene) Render() {
+func (g *GameScene) Render(ctx *nk.Context) {
 	Renderer.SetProjection(projection)
 
 	// useful for debugging space issues
@@ -61,11 +62,29 @@ func (g *GameScene) Render() {
 	if tanklets.State == tanklets.GAME_WAITING {
 		Text.Print("Connecting", 50, 100, 1)
 	}
+
 	if tanklets.State == tanklets.GAME_DEAD {
 		Text.Print("You died", 50, 50, 1)
 	}
 
-	GuiRender()
+	nk.NkPlatformNewFrame()
+
+	bounds := nk.NkRect(0, 0, 200, 120)
+	update := nk.NkBegin(ctx, "Debug", bounds, nk.WindowMinimizable)
+
+	if update > 0 {
+		nk.NkLayoutRowDynamic(ctx, 20, 1)
+		{
+			nk.NkLabel(ctx, fmt.Sprint("ping: ", tanklets.MyPing), nk.TextLeft)
+		}
+		nk.NkLayoutRowDynamic(ctx, 20, 1)
+		{
+			nk.NkLabel(ctx, fmt.Sprint("in: ", tanklets.Bytes(tanklets.NetworkIn)), nk.TextLeft)
+			nk.NkLabel(ctx, fmt.Sprint("out: ", tanklets.Bytes(tanklets.NetworkOut)), nk.TextLeft)
+		}
+	}
+	nk.NkEnd(ctx)
+	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }
 
 func (g *GameScene) Transition() Scene {

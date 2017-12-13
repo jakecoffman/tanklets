@@ -23,7 +23,7 @@ var (
 
 var projection mgl32.Mat4
 
-func Init(width, height float32) {
+func InitResources() {
 	// shaders
 	ResourceManager.LoadShader("shaders/main.vs.glsl", "shaders/main.fs.glsl", "sprite")
 	ResourceManager.LoadShader("shaders/simple.vs.glsl", "shaders/simple.fs.glsl", "simple")
@@ -31,8 +31,8 @@ func Init(width, height float32) {
 	ResourceManager.LoadShader("shaders/cp.vs.glsl", "shaders/cp.fs.glsl", "cp")
 
 	// renderers
-	projection = mgl32.Ortho2D(0, width, height, 0)
-	Text = NewTextRenderer(ResourceManager.Shader("text"), width, height, "textures/Roboto-Light.ttf")
+	projection = mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0)
+	Text = NewTextRenderer(ResourceManager.Shader("text"), float32(screenWidth), float32(screenHeight), "textures/Roboto-Light.ttf")
 	Text.SetColor(.8, .8, .3, 1)
 	Simple = NewSimpleRenderer(ResourceManager.Shader("simple"), projection)
 	Renderer = NewSpriteRenderer(ResourceManager.Shader("sprite"), projection)

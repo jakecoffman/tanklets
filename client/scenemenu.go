@@ -23,13 +23,12 @@ func (m *MainMenuScene) Update(dt float64) {
 
 }
 
-func (m *MainMenuScene) Render() {
+func (m *MainMenuScene) Render(ctx *nk.Context) {
 	nk.NkPlatformNewFrame()
 
 	// Layout
 	bounds := nk.NkRect(50, 50, 200, 230)
-	update := nk.NkBegin(ctx, "Welcome", bounds,
-		nk.WindowBorder|nk.WindowMovable|nk.WindowScalable|nk.WindowMinimizable|nk.WindowTitle)
+	update := nk.NkBegin(ctx, "Welcome", bounds, 0)
 
 	if update > 0 {
 		nk.NkLayoutRowDynamic(ctx, 20, 1)
@@ -47,7 +46,7 @@ func (m *MainMenuScene) Render() {
 	}
 
 	nk.NkEnd(ctx)
-	nk.NkPlatformRender(nk.AntiAliasingOn, maxVertexBuffer, maxElementBuffer)
+	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }
 
 func (m *MainMenuScene) Transition() Scene {

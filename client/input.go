@@ -56,13 +56,14 @@ func ProcessInput() {
 	myTank := tanklets.Tanks[tanklets.Me]
 	pos := myTank.Position()
 	x, y := float32(pos.X), float32(pos.Y)
-	projection = mgl32.Ortho2D(x-800./2., x+800./2., y+600./2., y-600./2.)
+	sw, sh := float32(screenWidth), float32(screenHeight)
+	projection = mgl32.Ortho2D(x-sw/2., x+sw/2., y+sh/2., y-sh/2.)
 	obj, err := mgl32.UnProject(
-		mgl32.Vec3{float32(mouse.X), 600 - float32(mouse.Y), 0},
+		mgl32.Vec3{float32(mouse.X), sh - float32(mouse.Y), 0},
 		identityMatrix,
 		projection,
 		0, 0,
-		800, 600,
+		screenWidth, screenHeight,
 	)
 	var turret cp.Vector
 	if err != nil {

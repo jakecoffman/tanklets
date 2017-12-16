@@ -72,9 +72,6 @@ func Loop() {
 		lastFrame = currentFrame
 
 		scene.Update(dt)
-
-		gl.ClearColor(.1, .1, .1, 1)
-		gl.Clear(gl.COLOR_BUFFER_BIT)
 		scene.Render(ctx)
 
 		if newScene := scene.Transition(); newScene != nil {

@@ -2,22 +2,29 @@ package client
 
 import (
 	"github.com/golang-ui/nuklear/nk"
-	"log"
+	"github.com/go-gl/gl/v3.2-core/gl"
 )
 
 const (
 	PlayNone = iota
 	PlayOnline
+	PlayHost
 	PlayLAN
 )
 
 type MainMenuScene struct {
-	play int
+	state      int
+	textBuffer []byte
 }
 
 func NewMainMenuScene() *MainMenuScene {
-	return &MainMenuScene{play: PlayNone}
+	return &MainMenuScene{
+		state:      PlayNone,
+		textBuffer: make([]byte, textBufferSize),
+	}
 }
+
+const textBufferSize = 256*1024
 
 func (m *MainMenuScene) Update(dt float64) {
 
@@ -27,30 +34,58 @@ func (m *MainMenuScene) Render(ctx *nk.Context) {
 	nk.NkPlatformNewFrame()
 
 	// Layout
-	bounds := nk.NkRect(50, 50, 200, 230)
-	update := nk.NkBegin(ctx, "Welcome", bounds, 0)
+	bounds := nk.NkRect(50, 50, 230, 230)
+	update := nk.NkBegin(ctx, "Tank Game", bounds, nk.WindowTitle | nk.WindowBorder)
 
 	if update > 0 {
-		nk.NkLayoutRowDynamic(ctx, 20, 1)
-		{
-			nk.NkLabel(ctx, "Welcome to Tank Game, what do you want to do?", nk.TextLeft)
-			if nk.NkButtonLabel(ctx, "Play Online") > 0 {
-				log.Println("Play online")
-				m.play = PlayOnline
+		switch m.state {
+		case PlayLAN:
+			nk.NkLayoutRowDynamic(ctx, 0, 1)
+			{
+				nk.NkEditStringZeroTerminated(ctx, nk.EditSimple, m.textBuffer, textBufferSize, nk.NkFilterDefault)
+				nk.NkLayoutRowDynamic(ctx, 0, 2)
+				{
+					if nk.NkButtonLabel(ctx, "Connect") > 0 {
+						m.state = PlayNone
+					}
+					if nk.NkButtonLabel(ctx, "Cancel") > 0 {
+						m.state = PlayNone
+					}
+				}
 			}
-			if nk.NkButtonLabel(ctx, "Play LAN") > 0 {
-				log.Println("Play lan")
-				m.play = PlayLAN
+			nk.NkLayoutRowDynamic(ctx, 100, 1)
+			{
+				str := "I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. "
+				nk.NkEditStringZeroTerminated(ctx, nk.EditBox, []byte(str), int32(len(str)), nk.NkFilterDefault)
+			}
+		default:
+			nk.NkLayoutRowDynamic(ctx, 0, 1)
+			{
+				if nk.NkButtonLabel(ctx, "Play") > 0 {
+					m.state = PlayOnline
+				}
+			}
+			nk.NkLayoutRowDynamic(ctx, 0, 1)
+			{
+				nk.NkLabel(ctx, "LAN", nk.TextLeft)
+				if nk.NkButtonLabel(ctx, "Host") > 0 {
+					m.state = PlayHost
+				}
+				if nk.NkButtonLabel(ctx, "Join") > 0 {
+					m.state = PlayLAN
+				}
 			}
 		}
 	}
 
 	nk.NkEnd(ctx)
+	gl.ClearColor(.1, .1, .1, 1)
+	gl.Clear(gl.COLOR_BUFFER_BIT)
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }
 
 func (m *MainMenuScene) Transition() Scene {
-	if m.play == PlayOnline {
+	if m.state == PlayOnline {
 		return NewGameScene()
 	}
 	return nil

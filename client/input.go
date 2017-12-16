@@ -1,9 +1,6 @@
 package client
 
 import (
-	"log"
-	"time"
-
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
@@ -25,70 +22,6 @@ var identityMatrix = mgl32.Mat4{
 	0, 1, 0, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 1,
-}
-
-
-func ProcessInput() {
-	if tanklets.State != tanklets.GAME_PLAYING {
-		return
-	}
-
-	if Player == nil {
-		Player = tanklets.Tanks[tanklets.Me]
-		if Player == nil {
-			return
-		}
-	}
-
-	var turn, throttle int8
-	if Keys[glfw.KeyD] {
-		turn = 1
-	} else if Keys[glfw.KeyA] {
-		turn = -1
-	}
-	if Keys[glfw.KeyW] {
-		throttle = -1
-	} else if Keys[glfw.KeyS] {
-		throttle = 1
-	}
-
-	// update projection and mouse world position
-	myTank := tanklets.Tanks[tanklets.Me]
-	pos := myTank.Position()
-	x, y := float32(pos.X), float32(pos.Y)
-	sw, sh := float32(screenWidth), float32(screenHeight)
-	projection = mgl32.Ortho2D(x-sw/2., x+sw/2., y+sh/2., y-sh/2.)
-	obj, err := mgl32.UnProject(
-		mgl32.Vec3{float32(mouse.X), sh - float32(mouse.Y), 0},
-		identityMatrix,
-		projection,
-		0, 0,
-		screenWidth, screenHeight,
-	)
-	var turret cp.Vector
-	if err != nil {
-		log.Println(err)
-	} else {
-		mouseWorld := cp.Vector{float64(obj.X()), float64(obj.Y())}
-		turret = mouseWorld.Sub(Player.Turret.Body.Position())
-	}
-
-	if LeftClick {
-		tanklets.Send(tanklets.Shoot{}, tanklets.ServerAddr)
-		Player.LastShot = time.Now()
-	}
-
-	RightDown = false
-	LeftDown = false
-
-	// TODO separate turret aim into a message sent less often since it's never 0 now
-	if turn == 0.0 && throttle == 0.0 && turret.X == 0 && turret.Y == 0 {
-		return
-	}
-
-	// send all of this input to the server
-	myTank.NextMove = tanklets.Move{Turn: turn, Throttle: throttle, TurretX: turret.X, TurretY: turret.Y}
-	tanklets.Send(myTank.NextMove, tanklets.ServerAddr)
 }
 
 func CursorCallback(w *glfw.Window, xpos float64, ypos float64) {

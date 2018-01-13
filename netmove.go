@@ -3,7 +3,7 @@ package tanklets
 import (
 	"log"
 	"net"
-	"github.com/jakecoffman/binserializer"
+	"github.com/jakecoffman/binser"
 )
 
 // Sent to server only: Move relays inputs related to movement
@@ -29,25 +29,21 @@ func (m *Move) Handle(addr *net.UDPAddr) {
 }
 
 func (m Move) MarshalBinary() ([]byte, error) {
-	buf := binserializer.NewBuffer(19)
-	buf.WriteByte(MOVE)
-
-	buf.WriteInt8(m.Turn)
-	buf.WriteInt8(m.Throttle)
-
-	buf.WriteFloat64(m.TurretX)
-	buf.WriteFloat64(m.TurretY)
-	return buf.Bytes()
+	return m.Serialize(nil)
 }
 
 func (m *Move) UnmarshalBinary(b []byte) error {
-	buf := binserializer.NewBufferFromBytes(b)
-	_ = buf.GetByte()
+	_, err := m.Serialize(b)
+	return err
+}
 
-	m.Turn = buf.GetInt8()
-	m.Throttle = buf.GetInt8()
-
-	m.TurretX = buf.GetFloat64()
-	m.TurretY = buf.GetFloat64()
-	return buf.Error()
+func (m *Move) Serialize(b []byte) ([]byte, error) {
+	stream := binser.NewStream(b)
+	var t uint8 = MOVE
+	stream.Uint8(&t)
+	stream.Int8(&m.Turn)
+	stream.Int8(&m.Throttle)
+	stream.Float64(&m.TurretX)
+	stream.Float64(&m.TurretY)
+	return stream.Bytes()
 }

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jakecoffman/cp"
-	"github.com/jakecoffman/binserializer"
+	"github.com/jakecoffman/binser"
 )
 
 // 54 bytes
@@ -69,40 +69,30 @@ func (s *Shoot) Handle(addr *net.UDPAddr) {
 }
 
 func (s Shoot) MarshalBinary() ([]byte, error) {
-	if IsServer {
-		buf := binserializer.NewBuffer(55)
-		buf.WriteByte(SHOOT)
-		buf.WriteUint16(uint16(s.PlayerID))
-		buf.WriteUint64(uint64(s.BulletID))
-		buf.WriteInt16(s.Bounce)
-		buf.WriteFloat64(s.X)
-		buf.WriteFloat64(s.Y)
-		buf.WriteFloat64(s.Vx)
-		buf.WriteFloat64(s.Vy)
-		buf.WriteFloat64(s.Angle)
-		return buf.Bytes()
-	} else {
-		buf := binserializer.NewBuffer(3)
-		buf.WriteByte(SHOOT)
-		buf.WriteUint16(uint16(s.PlayerID))
-		return buf.Bytes()
-	}
+	return s.Serialize(nil)
 }
 
 func (s *Shoot) UnmarshalBinary(b []byte) error {
-	buf := binserializer.NewBufferFromBytes(b)
-	_ = buf.GetByte()
-	if IsServer {
-		s.PlayerID = PlayerID(buf.GetUint16())
-	} else {
-		s.PlayerID = PlayerID(buf.GetUint16())
-		s.BulletID = BulletID(buf.GetUint64())
-		s.Bounce = buf.GetInt16()
-		s.X = buf.GetFloat64()
-		s.Y = buf.GetFloat64()
-		s.Vx = buf.GetFloat64()
-		s.Vy = buf.GetFloat64()
-		s.Angle = buf.GetFloat64()
+	_, err := s.Serialize(b)
+	return err
+}
+
+func (s *Shoot) Serialize(b []byte) ([]byte, error) {
+	stream := binser.NewStream(b)
+	var t uint8 = SHOOT
+	stream.Uint8(&t)
+	if !IsServer && !stream.IsReading() || IsServer && stream.IsReading() {
+		// the player sends this empty message to shoot
+		return stream.Bytes()
 	}
-	return buf.Error()
+	// the server sends all players the rest of the data
+	stream.Uint16((*uint16)(&s.PlayerID))
+	stream.Uint64((*uint64)(&s.BulletID))
+	stream.Int16(&s.Bounce)
+	stream.Float64(&s.X)
+	stream.Float64(&s.Y)
+	stream.Float64(&s.Vx)
+	stream.Float64(&s.Vy)
+	stream.Float64(&s.Angle)
+	return stream.Bytes()
 }

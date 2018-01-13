@@ -151,7 +151,7 @@ func Recv() {
 			log.Println("Unkown message type", data[0])
 			continue
 		}
-		err = handler.UnmarshalBinary(data)
+		_, err = handler.Serialize(data)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -229,6 +229,5 @@ func ProcessingOutgoingClient() {
 
 type Handler interface {
 	Handle(addr *net.UDPAddr)
-	encoding.BinaryMarshaler
-	encoding.BinaryUnmarshaler
+	Serialize(b []byte) ([]byte, error)
 }

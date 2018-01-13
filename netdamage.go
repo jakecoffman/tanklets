@@ -3,7 +3,7 @@ package tanklets
 import (
 	"log"
 	"net"
-	"github.com/jakecoffman/binserializer"
+	"github.com/jakecoffman/binser"
 )
 
 type Damage struct {
@@ -24,15 +24,18 @@ func (d *Damage) Handle(addr *net.UDPAddr) {
 }
 
 func (d Damage) MarshalBinary() ([]byte, error) {
-	buf := binserializer.NewBuffer(3)
-	buf.WriteByte(DAMAGE)
-	buf.WriteUint16(uint16(d.ID))
-	return buf.Bytes()
+	return d.Serialize(nil)
 }
 
 func (d *Damage) UnmarshalBinary(b []byte) error {
-	buf := binserializer.NewBufferFromBytes(b)
-	_ = buf.GetByte()
-	d.ID = PlayerID(buf.GetUint16())
-	return nil
+	_, err := d.Serialize(b)
+	return err
+}
+
+func (d *Damage) Serialize(b []byte) ([]byte, error) {
+	stream := binser.NewStream(b)
+	var m uint8 = DAMAGE
+	stream.Uint8(&m)
+	stream.Uint16((*uint16)(&d.ID))
+	return stream.Bytes()
 }

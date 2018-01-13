@@ -7,15 +7,16 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
-	"github.com/jakecoffman/binserializer"
+	"github.com/jakecoffman/binser"
+	"golang.org/x/image/math/f32"
 )
 
 var curId PlayerID = 1
 
 type Join struct {
 	ID    PlayerID
-	You   bool
-	Color mgl32.Vec3
+	You   uint8
+	Color f32.Vec3
 }
 
 var colors = []mgl32.Vec3{
@@ -45,18 +46,18 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 		tank = NewTank(curId, colors[colorCursor])
 		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
 		// tell this player their ID
-		Send(Join{tank.ID, true, tank.Color}, addr)
+		Send(Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
 		loc := tank.Location()
 		// tell this player where they are
 		Send(loc, addr)
-		join := Join{tank.ID, false, tank.Color}
+		join := Join{tank.ID, 0, f32.Vec3(tank.Color)}
 		Players.Each(func (id PlayerID, p *net.UDPAddr) {
 			// tell all players about this player
 			Send(join, p)
 			Send(loc, p)
 			// tell this player where all the existing players are
 			thisTank := Tanks[id]
-			Send(Join{id, false, thisTank.Color}, addr)
+			Send(Join{id, 0, f32.Vec3(thisTank.Color)}, addr)
 			Send(thisTank.Location(), addr)
 		})
 		Lookup[addr.String()] = tank.ID
@@ -65,8 +66,8 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 		colorCursor++
 	} else {
 		fmt.Println("Player joined")
-		tank = NewTank(j.ID, j.Color)
-		if j.You {
+		tank = NewTank(j.ID, mgl32.Vec3(j.Color))
+		if j.You > 0 {
 			fmt.Println("Oh, it's me!")
 			Me = tank.ID
 			//Player = player
@@ -77,29 +78,22 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 }
 
 func (j Join) MarshalBinary() ([]byte, error) {
-	buf := binserializer.NewBuffer(17)
-	buf.WriteByte(JOIN)
-	if j.You {
-		buf.WriteByte(1)
-	} else {
-		buf.WriteByte(0)
-	}
-	buf.WriteUint16(uint16(j.ID))
-	buf.WriteFloat32(j.Color.X())
-	buf.WriteFloat32(j.Color.Y())
-	buf.WriteFloat32(j.Color.Z())
-	return buf.Bytes()
+	return j.Serialize(nil)
 }
 
-func (j *Join) UnmarshalBinary(bytes []byte) error {
-	buf := binserializer.NewBufferFromBytes(bytes)
-	_ = buf.GetByte()
-	if buf.GetByte() == 1 {
-		j.You = true
-	}
-	j.ID = PlayerID(buf.GetUint16())
-	j.Color[0] = buf.GetFloat32()
-	j.Color[1] = buf.GetFloat32()
-	j.Color[2] = buf.GetFloat32()
-	return buf.Error()
+func (j *Join) UnmarshalBinary(b []byte) error {
+	_, err := j.Serialize(b)
+	return err
+}
+
+func (j *Join) Serialize(b []byte) ([]byte, error) {
+	stream := binser.NewStream(b)
+	var m uint8 = JOIN
+	stream.Uint8(&m)
+	stream.Uint8(&j.You)
+	stream.Uint16((*uint16)(&j.ID))
+	stream.Float32(&j.Color[0])
+	stream.Float32(&j.Color[1])
+	stream.Float32(&j.Color[2])
+	return stream.Bytes()
 }

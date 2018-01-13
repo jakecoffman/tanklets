@@ -33,10 +33,10 @@ const (
 
 var PLAYER_MASK_BIT uint = 1 << 31
 
-var PlayerFilter cp.ShapeFilter = cp.ShapeFilter{
+var PlayerFilter = cp.ShapeFilter{
 	cp.NO_GROUP, PLAYER_MASK_BIT, PLAYER_MASK_BIT,
 }
-var NotPlayerFilter cp.ShapeFilter = cp.ShapeFilter{
+var NotPlayerFilter = cp.ShapeFilter{
 	cp.NO_GROUP, ^PLAYER_MASK_BIT, ^PLAYER_MASK_BIT,
 }
 
@@ -53,8 +53,7 @@ func NewGame(width, height float64) {
 	}
 
 	for i := 0; i < len(sides); i += 2 {
-		var seg *cp.Shape
-		seg = space.AddShape(cp.NewSegment(space.StaticBody, sides[i], sides[i+1], 0))
+		seg := space.AddShape(cp.NewSegment(space.StaticBody, sides[i], sides[i+1], 0))
 		seg.SetElasticity(1)
 		seg.SetFriction(0)
 		seg.SetFilter(PlayerFilter)

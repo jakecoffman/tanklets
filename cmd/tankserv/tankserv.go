@@ -63,14 +63,14 @@ func main() {
 		}
 
 		// handle all incoming messages this frame
-	net:
+	inner:
 		for {
 			select {
 			case incoming := <-tanklets.Incomings:
 				incoming.Handler.Handle(incoming.Addr)
 			case <-physicsTick:
 				// time to do a physics tick
-				break net
+				break inner
 			case <-updateTick:
 				// 58 bytes per n players, 10 times per second = 580n^2
 				for _, tank := range tanklets.Tanks {

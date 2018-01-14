@@ -10,6 +10,7 @@ import (
 	"log"
 	"time"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"math"
 )
 
 type GameScene struct {
@@ -165,6 +166,6 @@ func ProcessInput() {
 	}
 
 	// send all of this input to the server
-	myTank.NextMove = tanklets.Move{Turn: turn, Throttle: throttle, TurretX: turret.X, TurretY: turret.Y}
+	myTank.NextMove = tanklets.Move{Turn: turn, Throttle: throttle, TurretAngle: math.Atan2(turret.Y, turret.X)}
 	tanklets.Send(myTank.NextMove, tanklets.ServerAddr)
 }

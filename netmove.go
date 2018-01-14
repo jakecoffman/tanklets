@@ -9,7 +9,7 @@ import (
 // Sent to server only: Move relays inputs related to movement
 type Move struct {
 	Turn, Throttle int8
-	TurretX, TurretY float64
+	TurretAngle float64
 }
 
 func (m *Move) Handle(addr *net.UDPAddr) {
@@ -24,8 +24,7 @@ func (m *Move) Handle(addr *net.UDPAddr) {
 
 	tank.NextMove.Turn = m.Turn
 	tank.NextMove.Throttle = m.Throttle
-	tank.NextMove.TurretX = m.TurretX
-	tank.NextMove.TurretY = m.TurretY
+	tank.NextMove.TurretAngle = m.TurretAngle
 }
 
 func (m Move) MarshalBinary() ([]byte, error) {
@@ -41,9 +40,18 @@ func (m *Move) Serialize(b []byte) ([]byte, error) {
 	stream := binser.NewStream(b)
 	var t uint8 = MOVE
 	stream.Uint8(&t)
-	stream.Int8(&m.Turn)
-	stream.Int8(&m.Throttle)
-	stream.Float64(&m.TurretX)
-	stream.Float64(&m.TurretY)
+	var atRest uint8
+	if !stream.IsReading() && m.Turn == 0 && m.Throttle == 0 {
+		atRest = 1
+	}
+	stream.Uint8(&atRest)
+	if atRest == 0 {
+		stream.Int8(&m.Turn)
+		stream.Int8(&m.Throttle)
+	} else if stream.IsReading() {
+		m.Turn = 0
+		m.Throttle = 0
+	}
+	stream.Float64(&m.TurretAngle)
 	return stream.Bytes()
 }

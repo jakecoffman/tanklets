@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
+	"math"
 )
 
 // default tank attributes (power-ups could change them!)
@@ -100,11 +101,11 @@ func (tank *Tank) FixedUpdate(dt float64) {
 		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(m.Throttle) * MaxSpeed}))
 	}
 
-	if m.TurretX != 0 && m.TurretY != 0 {
-		angle := tank.Turret.Rotation().Unrotate(cp.Vector{m.TurretX, m.TurretY}).ToAngle()
-		tank.Turret.SetAngle(tank.Turret.Angle() - angle)
-		tank.Turret.SetPosition(tank.Body.Position())
-	}
+	x := math.Cos(m.TurretAngle)
+	y := math.Sin(m.TurretAngle)
+	angle := tank.Turret.Rotation().Unrotate(cp.Vector{x, y}).ToAngle()
+	tank.Turret.SetAngle(tank.Turret.Angle() - angle)
+	tank.Turret.SetPosition(tank.Body.Position())
 
 	tank.LastMove = tank.NextMove
 }

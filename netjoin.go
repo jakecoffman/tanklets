@@ -46,19 +46,19 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 		tank = NewTank(curId, colors[colorCursor])
 		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
 		// tell this player their ID
-		Send(Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
+		ServerSend(Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
 		loc := tank.Location()
 		// tell this player where they are
-		Send(loc, addr)
+		ServerSend(loc, addr)
 		join := Join{tank.ID, 0, f32.Vec3(tank.Color)}
 		Players.Each(func (id PlayerID, p *net.UDPAddr) {
 			// tell all players about this player
-			Send(join, p)
-			Send(loc, p)
+			ServerSend(join, p)
+			ServerSend(loc, p)
 			// tell this player where all the existing players are
 			thisTank := Tanks[id]
-			Send(Join{id, 0, f32.Vec3(thisTank.Color)}, addr)
-			Send(thisTank.Location(), addr)
+			ServerSend(Join{id, 0, f32.Vec3(thisTank.Color)}, addr)
+			ServerSend(thisTank.Location(), addr)
 		})
 		Lookup[addr.String()] = tank.ID
 		Players.Put(curId, addr)

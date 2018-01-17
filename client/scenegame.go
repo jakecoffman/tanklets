@@ -22,7 +22,7 @@ func NewGameScene() *GameScene {
 	tanklets.NetInit()
 
 	fmt.Println("Sending JOIN command")
-	tanklets.Send(tanklets.Join{}, tanklets.ServerAddr)
+	tanklets.ClientSend(tanklets.Join{})
 	return &GameScene{}
 }
 
@@ -103,7 +103,7 @@ func (g *GameScene) Transition() Scene {
 
 func (g *GameScene) Destroy() {
 	fmt.Println("Sending DISCONNECT")
-	tanklets.Send(tanklets.Disconnect{}, tanklets.ServerAddr)
+	tanklets.ClientSend(tanklets.Disconnect{})
 }
 
 func ProcessInput() {
@@ -153,7 +153,7 @@ func ProcessInput() {
 	}
 
 	if LeftClick {
-		tanklets.Send(tanklets.Shoot{}, tanklets.ServerAddr)
+		tanklets.ClientSend(tanklets.Shoot{})
 		Player.LastShot = time.Now()
 	}
 
@@ -167,5 +167,5 @@ func ProcessInput() {
 
 	// send all of this input to the server
 	myTank.NextMove = tanklets.Move{Turn: turn, Throttle: throttle, TurretAngle: math.Atan2(turret.Y, turret.X)}
-	tanklets.Send(myTank.NextMove, tanklets.ServerAddr)
+	tanklets.ClientSend(myTank.NextMove)
 }

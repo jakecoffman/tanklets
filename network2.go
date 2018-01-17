@@ -41,7 +41,6 @@ type Outgoing struct {
 }
 
 var Incomings = make(chan Incoming, 1000)
-var Outgoings = make(chan Outgoing, 1000)
 
 var tick = time.Tick(1 * time.Second)
 var incomingBytesPerSecond uint64
@@ -88,12 +87,6 @@ func NetInit() {
 	udpConn.SetReadBuffer(1048576)
 
 	go Recv()
-
-	if IsServer {
-		go ProcessOutgoingServer()
-	} else {
-		go ProcessingOutgoingClient()
-	}
 }
 
 func NetClose() error {
@@ -181,50 +174,41 @@ func ProcessIncoming() {
 	}
 }
 
-// Send queues up an outgoing byte array to be sent immediately so sending isn't blocking
-func Send(handler encoding.BinaryMarshaler, addr *net.UDPAddr) {
+func ClientSend(handler encoding.BinaryMarshaler) {
 	data, err := handler.MarshalBinary()
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	ClientSendRaw(data)
+}
 
-	Outgoings <- Outgoing{data: data, addr: addr}
+func ClientSendRaw(data []byte) {
+	n, err := udpConn.Write(data)
+	if err != nil {
+		panic(err)
+		return
+	}
+	atomic.AddUint64(&outgoingBytesPerSecond, uint64(n))
+}
+
+func ServerSend(handler encoding.BinaryMarshaler, addr *net.UDPAddr) {
+	data, err := handler.MarshalBinary()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	ServerSendRaw(data, addr)
 }
 
 // SendRaw is the same as Send but takes bytes
-func SendRaw(data []byte, addr *net.UDPAddr) {
-	Outgoings <- Outgoing{data: data, addr: addr}
-}
-
-func ProcessOutgoingServer() {
-	var outgoing Outgoing
-	var n int
-	var err error
-
-	for {
-		outgoing = <-Outgoings
-		n, err = udpConn.WriteToUDP(outgoing.data, outgoing.addr)
-		if err != nil {
-			panic(err)
-			return
-		}
-		atomic.AddUint64(&outgoingBytesPerSecond, uint64(n))
+func ServerSendRaw(data []byte, addr *net.UDPAddr) {
+	n, err := udpConn.WriteToUDP(data, addr)
+	if err != nil {
+		panic(err)
+		return
 	}
-}
-
-func ProcessingOutgoingClient() {
-	var outgoing Outgoing
-	var n int
-	var err error
-	for {
-		outgoing = <-Outgoings
-		n, err = udpConn.Write(outgoing.data)
-		if err != nil {
-			log.Println(err)
-		}
-		atomic.AddUint64(&outgoingBytesPerSecond, uint64(n))
-	}
+	atomic.AddUint64(&outgoingBytesPerSecond, uint64(n))
 }
 
 type Handler interface {

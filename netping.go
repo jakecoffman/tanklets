@@ -20,7 +20,7 @@ func (d *Ping) Handle(addr *net.UDPAddr) {
 	} else {
 		MyPing = time.Now().Sub(d.T)
 		d.T = time.Now()
-		Send(d, ServerAddr)
+		ClientSend(d)
 	}
 }
 

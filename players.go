@@ -56,7 +56,7 @@ func (p *PlayerLookup) SendAll(packets ...encoding.BinaryMarshaler) {
 			log.Fatal(err)
 		}
 		for _, player := range p.players {
-			SendRaw(data, player)
+			ServerSendRaw(data, player)
 		}
 	}
 	p.RUnlock()

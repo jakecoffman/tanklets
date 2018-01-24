@@ -17,9 +17,11 @@ type GameScene struct {
 
 }
 
-func NewGameScene() *GameScene {
+func NewGameScene(w *glfw.Window) *GameScene {
 	tanklets.NewGame(800, 600)
 	tanklets.NetInit()
+
+	w.SetMouseButtonCallback(MouseButtonCallback)
 
 	fmt.Println("Sending JOIN command")
 	tanklets.ClientSend(tanklets.Join{})
@@ -97,7 +99,7 @@ func (g *GameScene) Render(ctx *nk.Context) {
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }
 
-func (g *GameScene) Transition() Scene {
+func (g *GameScene) Transition(w *glfw.Window) Scene {
 	return nil
 }
 

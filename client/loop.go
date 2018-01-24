@@ -45,7 +45,6 @@ func Loop() {
 	window.SetFramebufferSizeCallback(framebufferSizeCallback)
 	window.SetSizeCallback(windowSizeCallback)
 	window.SetCursorPosCallback(CursorCallback)
-	window.SetMouseButtonCallback(MouseButtonCallback)
 	glfw.SwapInterval(1)
 
 	if err := gl.Init(); err != nil {
@@ -74,12 +73,12 @@ func Loop() {
 		scene.Update(dt)
 		scene.Render(ctx)
 
-		if newScene := scene.Transition(); newScene != nil {
+		window.SwapBuffers()
+
+		if newScene := scene.Transition(window); newScene != nil {
 			scene.Destroy()
 			scene = newScene
 		}
-
-		window.SwapBuffers()
 
 		frames++
 		if frames > 100 {
@@ -89,6 +88,7 @@ func Loop() {
 		}
 	}
 
+	scene.Destroy()
 	ResourceManager.Clear()
 	runtime.KeepAlive(font)
 }

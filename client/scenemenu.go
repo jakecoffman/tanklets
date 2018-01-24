@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/golang-ui/nuklear/nk"
 	"github.com/go-gl/gl/v3.2-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 const (
@@ -84,9 +85,9 @@ func (m *MainMenuScene) Render(ctx *nk.Context) {
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }
 
-func (m *MainMenuScene) Transition() Scene {
+func (m *MainMenuScene) Transition(w *glfw.Window) Scene {
 	if m.state == PlayOnline {
-		return NewGameScene()
+		return NewGameScene(w)
 	}
 	return nil
 }

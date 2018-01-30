@@ -14,12 +14,17 @@ const (
 )
 
 type MainMenuScene struct {
+	window *glfw.Window
+	ctx *nk.Context
 	state      int
 	textBuffer []byte
 }
 
-func NewMainMenuScene() *MainMenuScene {
+func NewMainMenuScene(w *glfw.Window, ctx *nk.Context) Scene {
+	// TODO load resources here
 	return &MainMenuScene{
+		window: w,
+		ctx: ctx,
 		state:      PlayNone,
 		textBuffer: make([]byte, textBufferSize),
 	}
@@ -31,8 +36,9 @@ func (m *MainMenuScene) Update(dt float64) {
 
 }
 
-func (m *MainMenuScene) Render(ctx *nk.Context) {
+func (m *MainMenuScene) Render() {
 	nk.NkPlatformNewFrame()
+	ctx := m.ctx
 
 	// Layout
 	bounds := nk.NkRect(50, 50, 230, 230)
@@ -83,13 +89,11 @@ func (m *MainMenuScene) Render(ctx *nk.Context) {
 	gl.ClearColor(.1, .1, .1, 1)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
-}
 
-func (m *MainMenuScene) Transition(w *glfw.Window) Scene {
 	if m.state == PlayOnline {
-		return NewGameScene(w)
+		CurrentScene = NewGameScene(m.window, ctx)
+		m.Destroy()
 	}
-	return nil
 }
 
 func (m *MainMenuScene) Destroy() {

@@ -61,7 +61,7 @@ func Loop() {
 	ctx, font := GuiInit(window)
 	defer GuiDestroy()
 
-	scene := Scene(NewMainMenuScene())
+	CurrentScene = NewMainMenuScene(window, ctx)
 
 	for !window.ShouldClose() {
 		glfw.PollEvents()
@@ -70,15 +70,10 @@ func Loop() {
 		dt = currentFrame - lastFrame
 		lastFrame = currentFrame
 
-		scene.Update(dt)
-		scene.Render(ctx)
+		CurrentScene.Update(dt)
+		CurrentScene.Render()
 
 		window.SwapBuffers()
-
-		if newScene := scene.Transition(window); newScene != nil {
-			scene.Destroy()
-			scene = newScene
-		}
 
 		frames++
 		if frames > 100 {
@@ -88,7 +83,7 @@ func Loop() {
 		}
 	}
 
-	scene.Destroy()
+	CurrentScene.Destroy()
 	ResourceManager.Clear()
 	runtime.KeepAlive(font)
 }

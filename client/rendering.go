@@ -5,10 +5,6 @@ import (
 )
 
 var (
-//Player *tanklets.Tank // pointer to the tank that represents the local player
-)
-
-var (
 	Renderer      *SpriteRenderer
 	Text          *TextRenderer
 	Simple        *SimpleRenderer

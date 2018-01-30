@@ -14,10 +14,11 @@ import (
 )
 
 type GameScene struct {
-
+	window *glfw.Window
+	ctx *nk.Context
 }
 
-func NewGameScene(w *glfw.Window) *GameScene {
+func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
 	tanklets.NewGame(800, 600)
 	tanklets.NetInit()
 
@@ -25,7 +26,7 @@ func NewGameScene(w *glfw.Window) *GameScene {
 
 	fmt.Println("Sending JOIN command")
 	tanklets.ClientSend(tanklets.Join{})
-	return &GameScene{}
+	return &GameScene{window: w, ctx: ctx}
 }
 
 var accumulator = 0.
@@ -52,7 +53,7 @@ func (g *GameScene) Update(dt float64) {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
 
-func (g *GameScene) Render(ctx *nk.Context) {
+func (g *GameScene) Render() {
 	// TODO only set projection when it changes
 	Renderer.SetProjection(projection)
 
@@ -82,30 +83,27 @@ func (g *GameScene) Render(ctx *nk.Context) {
 	nk.NkPlatformNewFrame()
 
 	bounds := nk.NkRect(0, 0, 200, 120)
-	update := nk.NkBegin(ctx, "Debug", bounds, nk.WindowMinimizable)
+	update := nk.NkBegin(g.ctx, "Debug", bounds, nk.WindowMinimizable)
 
 	if update > 0 {
-		nk.NkLayoutRowDynamic(ctx, 20, 1)
+		nk.NkLayoutRowDynamic(g.ctx, 20, 1)
 		{
-			nk.NkLabel(ctx, fmt.Sprint("ping: ", tanklets.MyPing), nk.TextLeft)
+			nk.NkLabel(g.ctx, fmt.Sprint("ping: ", tanklets.MyPing), nk.TextLeft)
 		}
-		nk.NkLayoutRowDynamic(ctx, 20, 1)
+		nk.NkLayoutRowDynamic(g.ctx, 20, 1)
 		{
-			nk.NkLabel(ctx, fmt.Sprint("in: ", tanklets.Bytes(tanklets.NetworkIn)), nk.TextLeft)
-			nk.NkLabel(ctx, fmt.Sprint("out: ", tanklets.Bytes(tanklets.NetworkOut)), nk.TextLeft)
+			nk.NkLabel(g.ctx, fmt.Sprint("in: ", tanklets.Bytes(tanklets.NetworkIn)), nk.TextLeft)
+			nk.NkLabel(g.ctx, fmt.Sprint("out: ", tanklets.Bytes(tanklets.NetworkOut)), nk.TextLeft)
 		}
 	}
-	nk.NkEnd(ctx)
+	nk.NkEnd(g.ctx)
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
-}
-
-func (g *GameScene) Transition(w *glfw.Window) Scene {
-	return nil
 }
 
 func (g *GameScene) Destroy() {
 	fmt.Println("Sending DISCONNECT")
 	tanklets.ClientSend(tanklets.Disconnect{})
+	tanklets.NetClose()
 }
 
 func ProcessInput() {

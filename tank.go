@@ -64,20 +64,16 @@ func NewTank(id PlayerID, color mgl32.Vec3, isLocalPlayer bool) *Tank {
 	tankShape.SetFilter(cp.NewShapeFilter(uint(id), PLAYER_MASK_BIT, PLAYER_MASK_BIT))
 	tankShape.UserData = tank
 
-	if isLocalPlayer || IsServer {
-		// only local player and server need to simulate physics
-		// other players are just updated by server
-		tank.ControlBody = Space.AddBody(cp.NewKinematicBody())
+	tank.ControlBody = Space.AddBody(cp.NewKinematicBody())
 
-		pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
-		pivot.SetMaxBias(0)      // prevent joint from sucking the tank in
-		pivot.SetMaxForce(10000) // prevent tanks from spinning crazy
+	pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
+	pivot.SetMaxBias(0)      // prevent joint from sucking the tank in
+	pivot.SetMaxForce(10000) // prevent tanks from spinning crazy
 
-		Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
-		//gear.SetErrorBias(0) // idk
-		//gear.SetMaxBias(1.2) // idk
-		//gear.SetMaxForce(50000) // don't set or tank will go through walls
-	}
+	Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
+	//gear.SetErrorBias(0) // idk
+	//gear.SetMaxBias(1.2) // idk
+	//gear.SetMaxForce(50000) // don't set or tank will go through walls
 
 	tank.Turret.Body = Space.AddBody(cp.NewKinematicBody())
 	tank.Turret.Shape = Space.AddShape(cp.NewSegment(tank.Turret.Body, cp.Vector{0, 0}, cp.Vector{TurretHeight, 0}, TurretWidth))

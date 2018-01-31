@@ -51,9 +51,12 @@ func (l *Location) Handle(addr *net.UDPAddr) {
 	} else {
 		player.SetAngle(angle + adiff * 0.1)
 	}
+	player.ControlBody.SetAngle(player.Angle())
 
 	player.SetVelocity(float64(l.Vx), float64(l.Vy))
+	player.ControlBody.SetVelocityVector(player.Velocity())
 	player.SetAngularVelocity(float64(l.AngularVelocity))
+	player.ControlBody.SetAngularVelocity(player.AngularVelocity())
 	player.Turret.Body.SetAngle(float64(l.Turret))
 }
 

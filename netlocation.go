@@ -9,14 +9,14 @@ import (
 	"github.com/jakecoffman/binser"
 )
 
-// message sent to clients: update location information (58 bytes)
+// message sent to clients: update location information
 type Location struct {
-	ID                     PlayerID // 2 bytes
-	X, Y                   float64  // 16 bytes
-	Vx, Vy                 float64  // 16
-	Angle, AngularVelocity float64  // 16
+	ID                     PlayerID
+	X, Y                   float32
+	Vx, Vy                 float32
+	Angle, AngularVelocity float32
 
-	Turret float64 // 8
+	Turret float32
 }
 
 func (l *Location) Handle(addr *net.UDPAddr) {
@@ -30,26 +30,31 @@ func (l *Location) Handle(addr *net.UDPAddr) {
 		log.Println("Client", Me, "-- Player with ID", l.ID, "not found")
 		return
 	}
-	pos := player.Body.Position()
-	newPos := cp.Vector{l.X, l.Y}
+	pos := player.Position()
+	newPos := cp.Vector{float64(l.X), float64(l.Y)}
 
-	if pos.Distance(newPos) > 1 {
-		player.Body.SetPosition(newPos)
+	diff := newPos.Sub(pos)
+	distance := diff.Length()
+
+	// https://gafferongames.com/post/networked_physics_2004/
+	if distance > 4 {
+		player.SetPosition(newPos)
 	} else {
-		player.Body.SetPosition(pos.Lerp(newPos, 0.5))
+		player.SetPosition(pos.Add(diff.Mult(0.1)))
 	}
-
-	angle := player.ControlBody.Angle()
-	if math.Abs(angle-l.Angle) > 5 {
-		player.ControlBody.SetAngle(l.Angle)
-	} else {
-		player.ControlBody.SetAngle(cp.Lerp(l.Angle, angle, 0.5))
-	}
-
 	player.Turret.SetPosition(player.Body.Position())
-	player.ControlBody.SetVelocity(l.Vx, l.Vy)
-	player.ControlBody.SetAngularVelocity(l.AngularVelocity)
-	player.Turret.Body.SetAngle(l.Turret)
+
+	angle := player.Angle()
+	adiff := float64(l.Angle) - angle
+	if math.Abs(adiff) > .05 {
+		player.SetAngle(float64(l.Angle))
+	} else {
+		player.SetAngle(angle + adiff * 0.1)
+	}
+
+	player.SetVelocity(float64(l.Vx), float64(l.Vy))
+	player.SetAngularVelocity(float64(l.AngularVelocity))
+	player.Turret.Body.SetAngle(float64(l.Turret))
 }
 
 func (l Location) MarshalBinary() ([]byte, error) {
@@ -66,12 +71,12 @@ func (l *Location) Serialize(b []byte) ([]byte, error) {
 	var m uint8 = LOCATION
 	stream.Uint8(&m)
 	stream.Uint16((*uint16)(&l.ID))
-	stream.Float64(&l.X)
-	stream.Float64(&l.Y)
-	stream.Float64(&l.Vx)
-	stream.Float64(&l.Vy)
-	stream.Float64(&l.Angle)
-	stream.Float64(&l.AngularVelocity)
-	stream.Float64(&l.Turret)
+	stream.Float32(&l.X)
+	stream.Float32(&l.Y)
+	stream.Float32(&l.Vx)
+	stream.Float32(&l.Vy)
+	stream.Float32(&l.Angle)
+	stream.Float32(&l.AngularVelocity)
+	stream.Float32(&l.Turret)
 	return stream.Bytes()
 }

@@ -101,7 +101,10 @@ func (g *GameScene) Render() {
 }
 
 func (g *GameScene) Destroy() {
-	fmt.Println("Sending DISCONNECT")
+	tanklets.ClientSend(tanklets.Disconnect{})
+	tanklets.ClientSend(tanklets.Disconnect{})
+	tanklets.ClientSend(tanklets.Disconnect{})
+	tanklets.ClientSend(tanklets.Disconnect{})
 	tanklets.ClientSend(tanklets.Disconnect{})
 	tanklets.NetClose()
 }

@@ -2,7 +2,6 @@ package tanklets
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"github.com/jakecoffman/binser"
 )
@@ -18,7 +17,7 @@ func (d Disconnect) Handle(addr *net.UDPAddr) {
 		playerID := Lookup[addr.String()]
 		player := Players.Get(playerID)
 		if player == nil {
-			log.Println("Player not found", addr.String(), Lookup[addr.String()])
+			// this is normal, we spam disconnect when leaving to ensure the server gets it
 			return
 		}
 

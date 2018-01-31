@@ -43,7 +43,7 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 
 	if IsServer {
 		fmt.Println("Handling join")
-		tank = NewTank(curId, colors[colorCursor])
+		tank = NewTank(curId, colors[colorCursor], false)
 		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
 		// tell this player their ID
 		ServerSend(Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
@@ -66,7 +66,7 @@ func (j *Join) Handle(addr *net.UDPAddr) {
 		colorCursor++
 	} else {
 		fmt.Println("Player joined")
-		tank = NewTank(j.ID, mgl32.Vec3(j.Color))
+		tank = NewTank(j.ID, mgl32.Vec3(j.Color), j.You > 0)
 		if j.You > 0 {
 			fmt.Println("Oh, it's me!")
 			Me = tank.ID

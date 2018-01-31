@@ -52,12 +52,11 @@ type Turret struct {
 	width, height float64
 }
 
-func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
+func NewTank(id PlayerID, color mgl32.Vec3, isLocalPlayer bool) *Tank {
 	tank := &Tank{
 		ID:    id,
 		Color: color,
 	}
-	tank.ControlBody = Space.AddBody(cp.NewKinematicBody())
 	tank.Body = Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, TankWidth, TankHeight)))
 	tankShape := Space.AddShape(cp.NewBox(tank.Body, TankWidth, TankHeight, 0))
 	tankShape.SetElasticity(0)
@@ -65,14 +64,20 @@ func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tankShape.SetFilter(cp.NewShapeFilter(uint(id), PLAYER_MASK_BIT, PLAYER_MASK_BIT))
 	tankShape.UserData = tank
 
-	pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
-	pivot.SetMaxBias(0)      // prevent joint from sucking the tank in
-	pivot.SetMaxForce(10000) // prevent tanks from spinning crazy
+	if isLocalPlayer || IsServer {
+		// only local player and server need to simulate physics
+		// other players are just updated by server
+		tank.ControlBody = Space.AddBody(cp.NewKinematicBody())
 
-	Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
-	//gear.SetErrorBias(0) // idk
-	//gear.SetMaxBias(1.2) // idk
-	//gear.SetMaxForce(50000) // don't set or tank will go through walls
+		pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
+		pivot.SetMaxBias(0)      // prevent joint from sucking the tank in
+		pivot.SetMaxForce(10000) // prevent tanks from spinning crazy
+
+		Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
+		//gear.SetErrorBias(0) // idk
+		//gear.SetMaxBias(1.2) // idk
+		//gear.SetMaxForce(50000) // don't set or tank will go through walls
+	}
 
 	tank.Turret.Body = Space.AddBody(cp.NewKinematicBody())
 	tank.Turret.Shape = Space.AddShape(cp.NewSegment(tank.Turret.Body, cp.Vector{0, 0}, cp.Vector{TurretHeight, 0}, TurretWidth))
@@ -114,14 +119,14 @@ func (tank *Tank) FixedUpdate(dt float64) {
 func (tank *Tank) Location() *Location {
 	return &Location{
 		ID:              tank.ID,
-		X:               tank.Body.Position().X,
-		Y:               tank.Body.Position().Y,
-		Angle:           tank.Body.Angle(),
-		AngularVelocity: tank.Body.AngularVelocity(),
-		Vx:              tank.Body.Velocity().X,
-		Vy:              tank.Body.Velocity().Y,
+		X:               float32(tank.Body.Position().X),
+		Y:               float32(tank.Body.Position().Y),
+		Angle:           float32(tank.Body.Angle()),
+		AngularVelocity: float32(tank.Body.AngularVelocity()),
+		Vx:              float32(tank.Body.Velocity().X),
+		Vy:              float32(tank.Body.Velocity().Y),
 
-		Turret: tank.Turret.Angle(),
+		Turret: float32(tank.Turret.Angle()),
 	}
 }
 
@@ -137,9 +142,12 @@ func (tank *Tank) Damage(bullet *Bullet) {
 
 	tank.Destroyed = true
 	tank.Body.SetVelocity(0, 0)
-	tank.ControlBody.SetVelocity(0, 0)
 	tank.Body.SetAngularVelocity(0)
-	tank.ControlBody.SetAngularVelocity(0)
+
+	if tank.ControlBody != nil {
+		tank.ControlBody.SetVelocity(0, 0)
+		tank.ControlBody.SetAngularVelocity(0)
+	}
 
 	fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
 

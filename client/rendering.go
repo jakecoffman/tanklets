@@ -2,19 +2,22 @@ package client
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/jakecoffman/tanklets/client/glpers"
+)
+
+var ResourceManager = glpers.NewResourceManager()
+
+var (
+	Renderer      *glpers.SpriteRenderer
+	Text          *glpers.TextRenderer
+	Simple        *glpers.SimpleRenderer
+	SpaceRenderer *glpers.CPRenderer
 )
 
 var (
-	Renderer      *SpriteRenderer
-	Text          *TextRenderer
-	Simple        *SimpleRenderer
-	SpaceRenderer *CPRenderer
-)
-
-var (
-	tankTexture   *Texture2D
-	turretTexture *Texture2D
-	bulletTexture *Texture2D
+	tankTexture   *glpers.Texture2D
+	turretTexture *glpers.Texture2D
+	bulletTexture *glpers.Texture2D
 )
 
 var projection mgl32.Mat4
@@ -28,11 +31,11 @@ func InitResources() {
 
 	// renderers
 	projection = mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0)
-	Text = NewTextRenderer(ResourceManager.Shader("text"), float32(screenWidth), float32(screenHeight), "textures/Roboto-Light.ttf")
+	Text = glpers.NewTextRenderer(ResourceManager.Shader("text"), float32(screenWidth), float32(screenHeight), "textures/Roboto-Light.ttf")
 	Text.SetColor(.8, .8, .3, 1)
-	Simple = NewSimpleRenderer(ResourceManager.Shader("simple"), projection)
-	Renderer = NewSpriteRenderer(ResourceManager.Shader("sprite"), projection)
-	SpaceRenderer = NewCPRenderer(ResourceManager.Shader("cp"), projection)
+	Simple = glpers.NewSimpleRenderer(ResourceManager.Shader("simple"), projection)
+	Renderer = glpers.NewSpriteRenderer(ResourceManager.Shader("sprite"), projection)
+	SpaceRenderer = glpers.NewCPRenderer(ResourceManager.Shader("cp"), projection)
 
 	// textures
 	tankTexture = ResourceManager.LoadTexture("textures/tank.png", "tank")

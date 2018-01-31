@@ -3,7 +3,6 @@ package tanklets
 import (
 	"log"
 	"net"
-	"math"
 
 	"github.com/jakecoffman/cp"
 	"github.com/jakecoffman/binser"
@@ -19,13 +18,13 @@ type Location struct {
 	Turret float32
 }
 
-func (l *Location) Handle(addr *net.UDPAddr) {
+func (l *Location) Handle(addr *net.UDPAddr, game *Game) {
 	if IsServer {
 		log.Println("I shouldn't have gotten this")
 		return
 	}
 
-	player := Tanks[l.ID]
+	player := game.Tanks[l.ID]
 	if player == nil {
 		log.Println("Client", Me, "-- Player with ID", l.ID, "not found")
 		return
@@ -44,13 +43,7 @@ func (l *Location) Handle(addr *net.UDPAddr) {
 	}
 	player.Turret.SetPosition(player.Body.Position())
 
-	angle := player.Angle()
-	adiff := float64(l.Angle) - angle
-	if math.Abs(adiff) > .05 {
-		player.SetAngle(float64(l.Angle))
-	} else {
-		player.SetAngle(angle + adiff * 0.1)
-	}
+	player.SetAngle(float64(l.Angle))
 	player.ControlBody.SetAngle(player.Angle())
 
 	player.SetVelocity(float64(l.Vx), float64(l.Vy))

@@ -11,72 +11,78 @@ import (
 	"time"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"math"
+	"github.com/jakecoffman/tanklets/gutils"
 )
 
 type GameScene struct {
 	window *glfw.Window
 	ctx *nk.Context
+
+	game *tanklets.Game
 }
 
 func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
-	tanklets.NewGame(800, 600)
+	game := tanklets.NewGame(800, 600)
 	tanklets.NetInit()
 
 	w.SetMouseButtonCallback(MouseButtonCallback)
 
 	fmt.Println("Sending JOIN command")
 	tanklets.ClientSend(tanklets.Join{})
-	return &GameScene{window: w, ctx: ctx}
+	return &GameScene{
+		window: w,
+		ctx: ctx,
+		game: game,
+	}
 }
 
 var accumulator = 0.
 const physicsTickrate = 1.0 / 180.0
 
 func (g *GameScene) Update(dt float64) {
-	tanklets.ProcessIncoming()
+	tanklets.ProcessIncoming(g.game)
 
 	accumulator += dt
 	for accumulator >= physicsTickrate {
-		myTank := tanklets.Tanks[tanklets.Me]
+		myTank := g.game.Tanks[tanklets.Me]
 		if myTank == nil {
 			break
 		}
 		myTank.FixedUpdate(physicsTickrate)
-		tanklets.Space.Step(physicsTickrate)
+		g.game.Space.Step(physicsTickrate)
 		accumulator -= physicsTickrate
 	}
 
-	ProcessInput()
-	tanklets.Update(dt)
-
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	ProcessInput(g.game)
+	g.game.Update(dt)
 }
 
 func (g *GameScene) Render() {
 	// TODO only set projection when it changes
 	Renderer.SetProjection(projection)
 
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.ClearColor(.1, .1, .1, 1)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 
 	// useful for debugging space issues
 	SpaceRenderer.SetProjection(projection)
-	SpaceRenderer.DrawSpace(tanklets.Space)
+	SpaceRenderer.DrawSpace(g.game.Space)
 
-	for _, tank := range tanklets.Tanks {
+	for _, tank := range g.game.Tanks {
 		DrawTank(tank)
 	}
 
-	for _, bullet := range tanklets.Bullets {
-		DrawBullet(bullet)
+	for _, bullet := range g.game.Bullets {
+		DrawBullet(g.game, bullet)
 	}
 
-	if tanklets.State == tanklets.GAME_WAITING {
+	if g.game.State == tanklets.GameStateWaiting {
 		Text.Print("Connecting", 50, 100, 1)
 	}
 
-	if tanklets.State == tanklets.GAME_DEAD {
+	if g.game.State == tanklets.GameStateDead {
 		Text.Print("You died", 50, 50, 1)
 	}
 
@@ -92,8 +98,8 @@ func (g *GameScene) Render() {
 		}
 		nk.NkLayoutRowDynamic(g.ctx, 20, 1)
 		{
-			nk.NkLabel(g.ctx, fmt.Sprint("in: ", tanklets.Bytes(tanklets.NetworkIn)), nk.TextLeft)
-			nk.NkLabel(g.ctx, fmt.Sprint("out: ", tanklets.Bytes(tanklets.NetworkOut)), nk.TextLeft)
+			nk.NkLabel(g.ctx, fmt.Sprint("in: ", gutils.Bytes(tanklets.NetworkIn)), nk.TextLeft)
+			nk.NkLabel(g.ctx, fmt.Sprint("out: ", gutils.Bytes(tanklets.NetworkOut)), nk.TextLeft)
 		}
 	}
 	nk.NkEnd(g.ctx)
@@ -109,13 +115,13 @@ func (g *GameScene) Destroy() {
 	tanklets.NetClose()
 }
 
-func ProcessInput() {
-	if tanklets.State != tanklets.GAME_PLAYING {
+func ProcessInput(game *tanklets.Game) {
+	if game.State != tanklets.GameStatePlaying {
 		return
 	}
 
 	if Player == nil {
-		Player = tanklets.Tanks[tanklets.Me]
+		Player = game.Tanks[tanklets.Me]
 		if Player == nil {
 			return
 		}
@@ -135,7 +141,7 @@ func ProcessInput() {
 
 	// update projection and mouse world position
 	// TODO only recalculate when things have changed
-	myTank := tanklets.Tanks[tanklets.Me]
+	myTank := game.Tanks[tanklets.Me]
 	pos := myTank.Position()
 	x, y := float32(pos.X), float32(pos.Y)
 	sw, sh := float32(screenWidth), float32(screenHeight)

@@ -28,23 +28,3 @@ func GuiInit(win *glfw.Window) (*nk.Context, *nk.UserFont) {
 func GuiDestroy() {
 	nk.NkPlatformShutdown()
 }
-
-type Option uint8
-
-const (
-	Easy Option = 0
-	Hard Option = 1
-)
-
-func flag(v bool) int32 {
-	if v {
-		return 1
-	}
-	return 0
-}
-
-type State struct {
-	BgColor nk.Color
-	Prop    int32
-	Opt     Option
-}

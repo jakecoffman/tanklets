@@ -1,4 +1,4 @@
-package client
+package glpers
 
 import (
 	"os"
@@ -6,15 +6,16 @@ import (
 	"github.com/go-gl/gl/v3.2-core/gl"
 )
 
-// Singleton
 type resourceManager struct {
 	shaders map[string]*Shader
 	textures map[string]*Texture2D
 }
 
-var ResourceManager = &resourceManager{
-	shaders: map[string]*Shader{},
-	textures: map[string]*Texture2D{},
+func NewResourceManager() *resourceManager {
+	return &resourceManager{
+		shaders: map[string]*Shader{},
+		textures: map[string]*Texture2D{},
+	}
 }
 
 func (r *resourceManager) LoadShader(vertexPath, fragmentPath, name string) *Shader {

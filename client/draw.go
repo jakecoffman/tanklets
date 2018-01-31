@@ -18,9 +18,9 @@ func DrawTank(tank *tanklets.Tank) {
 	Renderer.DrawSprite(turretTexture, mgl32.Vec2{x, y}, mgl32.Vec2{32, 32}, tank.Turret.Angle(), color)
 }
 
-func DrawBullet(bullet *tanklets.Bullet) {
+func DrawBullet(game *tanklets.Game, bullet *tanklets.Bullet) {
 	pos := bullet.Body.Position()
 	x, y := float32(pos.X), float32(pos.Y)
-	color := tanklets.Tanks[bullet.PlayerID].Color
+	color := game.Tanks[bullet.PlayerID].Color
 	Renderer.DrawSprite(bulletTexture, mgl32.Vec2{x, y}, bullet.Size(), bullet.Body.Angle(), color)
 }

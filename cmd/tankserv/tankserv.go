@@ -16,7 +16,7 @@ const (
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	tanklets.NewGame(800, 600)
+	game := tanklets.NewGame(800, 600)
 	tanklets.IsServer = true
 	tanklets.NetInit()
 	defer func() { fmt.Println(tanklets.NetClose()) }()
@@ -45,13 +45,13 @@ func main() {
 		accumulator += dt.Seconds()
 
 		if accumulator >= physicsTickrate {
-			for _, tank := range tanklets.Tanks {
+			for _, tank := range game.Tanks {
 				tank.FixedUpdate(physicsTickrate)
 			}
-			tanklets.Space.Step(physicsTickrate)
+			game.Space.Step(physicsTickrate)
 			accumulator -= physicsTickrate
 		}
-		tanklets.Update(dt.Seconds())
+		game.Update(dt.Seconds())
 
 		// TODO move this check to the disconnect handler
 		if !hasHadPlayersConnect && tanklets.Players.Len() > 0 {
@@ -67,13 +67,13 @@ func main() {
 		for {
 			select {
 			case incoming := <-tanklets.Incomings:
-				incoming.Handler.Handle(incoming.Addr)
+				incoming.Handler.Handle(incoming.Addr, game)
 			case <-physicsTick:
 				// time to do a physics tick
 				break inner
 			case <-updateTick:
 				// 58 bytes per n players, 10 times per second = 580n^2
-				for _, tank := range tanklets.Tanks {
+				for _, tank := range game.Tanks {
 					tanklets.Players.SendAll(tank.Location())
 				}
 			}

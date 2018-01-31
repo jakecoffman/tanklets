@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 	"fmt"
+	"github.com/jakecoffman/tanklets/gutils"
 )
 
 var SimulatedNetworkLatencyMS = 100
@@ -59,8 +60,8 @@ func init() {
 				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
 
 				if IsServer {
-					fmt.Println("in :", Bytes(NetworkIn))
-					fmt.Println("out:", Bytes(NetworkOut))
+					fmt.Println("in :", gutils.Bytes(NetworkIn))
+					fmt.Println("out:", gutils.Bytes(NetworkOut))
 				}
 			}
 		}
@@ -131,15 +132,7 @@ func Recv() {
 		case DAMAGE:
 			handler = &Damage{}
 		case PING:
-			handler := &Ping{}
-			// just handle ping right now
-			err = handler.UnmarshalBinary(data)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			handler.Handle(addr)
-			continue
+			handler = &Ping{}
 		default:
 			log.Println("Unkown message type", data[0])
 			continue
@@ -162,11 +155,11 @@ func Recv() {
 }
 
 // ProcessIncoming runs on the game thread and handles all incoming messages that are queued
-func ProcessIncoming() {
+func ProcessIncoming(game *Game) {
 	for {
 		select {
 		case incoming := <-Incomings:
-			incoming.Handler.Handle(incoming.Addr)
+			incoming.Handler.Handle(incoming.Addr, game)
 		default:
 			// no data to process this frame
 			return
@@ -212,6 +205,6 @@ func ServerSendRaw(data []byte, addr *net.UDPAddr) {
 }
 
 type Handler interface {
-	Handle(addr *net.UDPAddr)
+	Handle(addr *net.UDPAddr, game *Game)
 	Serialize(b []byte) ([]byte, error)
 }

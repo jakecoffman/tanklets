@@ -10,10 +10,8 @@ type Disconnect struct {
 	ID PlayerID
 }
 
-func (d Disconnect) Handle(addr *net.UDPAddr) {
+func (d Disconnect) Handle(addr *net.UDPAddr, game *Game) {
 	if IsServer {
-		fmt.Println("SERVER: Player", d.ID, "has disconnceted")
-
 		playerID := Lookup[addr.String()]
 		player := Players.Get(playerID)
 		if player == nil {
@@ -23,7 +21,7 @@ func (d Disconnect) Handle(addr *net.UDPAddr) {
 
 		Players.Delete(playerID)
 		delete(Lookup, addr.String())
-		Tanks[playerID].Destroyed = true
+		game.Tanks[playerID].Destroyed = true
 
 		// tell others they left & destroyed
 		Players.SendAll(Disconnect{ID: playerID}, Damage{ID: playerID})

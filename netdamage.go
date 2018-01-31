@@ -10,8 +10,8 @@ type Damage struct {
 	ID PlayerID
 }
 
-func (d *Damage) Handle(addr *net.UDPAddr) {
-	tank := Tanks[d.ID]
+func (d *Damage) Handle(addr *net.UDPAddr, game *Game) {
+	tank := game.Tanks[d.ID]
 	if tank == nil {
 		log.Println("Tank", d.ID, "not found")
 		return
@@ -19,7 +19,7 @@ func (d *Damage) Handle(addr *net.UDPAddr) {
 	tank.Destroyed = true
 
 	if d.ID == Me {
-		State = GAME_DEAD
+		game.State = GameStateDead
 	}
 }
 

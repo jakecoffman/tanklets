@@ -9,7 +9,6 @@ import (
 	"github.com/jakecoffman/binser"
 )
 
-// 54 bytes
 type Shoot struct {
 	PlayerID PlayerID
 	BulletID BulletID
@@ -20,7 +19,7 @@ type Shoot struct {
 	Angle, AngularVelocity float64
 }
 
-func (s *Shoot) Handle(addr *net.UDPAddr) {
+func (s *Shoot) Handle(addr *net.UDPAddr, game *Game) {
 	if IsServer {
 		id := Lookup[addr.String()]
 		player := Players.Get(id)
@@ -28,15 +27,14 @@ func (s *Shoot) Handle(addr *net.UDPAddr) {
 			log.Println("Player not found", addr.String(), Lookup[addr.String()])
 			return
 		}
-		tank := Tanks[id]
+		tank := game.Tanks[id]
 
 		if time.Now().Sub(tank.LastShot) < ShotCooldown {
 			return
 		}
 		tank.LastShot = time.Now()
 
-		bullet := NewBullet(tank, bulletCurId)
-		bulletCurId++
+		bullet := game.NewBullet(tank, BulletID(game.bullet.Next()))
 
 		pos := cp.Vector{X: TankHeight / 2.0}
 		pos = pos.Rotate(tank.Turret.Rotation())
@@ -48,11 +46,11 @@ func (s *Shoot) Handle(addr *net.UDPAddr) {
 		shot := bullet.Location()
 		Players.SendAll(shot)
 	} else {
-		firedBy := Tanks[s.PlayerID]
-		bullet := Bullets[s.BulletID]
+		firedBy := game.Tanks[s.PlayerID]
+		bullet := game.Bullets[s.BulletID]
 		if bullet == nil {
-			bullet = NewBullet(firedBy, s.BulletID)
-			Bullets[s.BulletID] = bullet
+			bullet = game.NewBullet(firedBy, s.BulletID)
+			game.Bullets[s.BulletID] = bullet
 		}
 
 		bullet.Bounce = int(s.Bounce)

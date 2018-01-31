@@ -1,4 +1,4 @@
-package tanklets
+package gutils
 
 import (
 	"fmt"

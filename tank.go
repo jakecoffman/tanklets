@@ -1,8 +1,6 @@
 package tanklets
 
 import (
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -52,33 +50,33 @@ type Turret struct {
 	width, height float64
 }
 
-func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
+func (g *Game) NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tank := &Tank{
 		ID:    id,
 		Color: color,
 	}
-	tank.Body = Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, TankWidth, TankHeight)))
-	tankShape := Space.AddShape(cp.NewBox(tank.Body, TankWidth, TankHeight, 0))
+	tank.Body = g.Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, TankWidth, TankHeight)))
+	tankShape := g.Space.AddShape(cp.NewBox(tank.Body, TankWidth, TankHeight, 0))
 	tankShape.SetElasticity(0)
 	tankShape.SetFriction(1)
-	tankShape.SetFilter(cp.NewShapeFilter(uint(id), PLAYER_MASK_BIT, PLAYER_MASK_BIT))
+	tankShape.SetFilter(cp.NewShapeFilter(uint(id), PlayerMaskBit, PlayerMaskBit))
 	tankShape.UserData = tank
 
-	tank.ControlBody = Space.AddBody(cp.NewKinematicBody())
+	tank.ControlBody = g.Space.AddBody(cp.NewKinematicBody())
 
-	pivot := Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
+	pivot := g.Space.AddConstraint(cp.NewPivotJoint2(tank.ControlBody, tank.Body, cp.Vector{}, cp.Vector{}))
 	pivot.SetMaxBias(0)      // prevent joint from sucking the tank in
 	pivot.SetMaxForce(10000) // prevent tanks from spinning crazy
 
-	Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
+	g.Space.AddConstraint(cp.NewGearJoint(tank.ControlBody, tank.Body, 0.0, 1.0))
 	//gear.SetErrorBias(0) // idk
 	//gear.SetMaxBias(1.2) // idk
 	//gear.SetMaxForce(50000) // don't set or tank will go through walls
 
-	tank.Turret.Body = Space.AddBody(cp.NewKinematicBody())
-	tank.Turret.Shape = Space.AddShape(cp.NewSegment(tank.Turret.Body, cp.Vector{0, 0}, cp.Vector{TurretHeight, 0}, TurretWidth))
+	tank.Turret.Body = g.Space.AddBody(cp.NewKinematicBody())
+	tank.Turret.Shape = g.Space.AddShape(cp.NewSegment(tank.Turret.Body, cp.Vector{0, 0}, cp.Vector{TurretHeight, 0}, TurretWidth))
 	tank.Turret.Shape.SetFilter(cp.NewShapeFilter(uint(id), ^cp.ALL_CATEGORIES, ^cp.ALL_CATEGORIES))
-	circlePart := Space.AddShape(cp.NewCircle(tank.Turret.Body, 10, cp.Vector{}))
+	circlePart := g.Space.AddShape(cp.NewCircle(tank.Turret.Body, 10, cp.Vector{}))
 	circlePart.SetFilter(cp.NewShapeFilter(uint(id), ^cp.ALL_CATEGORIES, ^cp.ALL_CATEGORIES))
 
 	return tank
@@ -90,6 +88,9 @@ func (tank *Tank) Update(dt float64) {
 
 func (tank *Tank) FixedUpdate(dt float64) {
 	if tank.Destroyed {
+		// slowly stop, looks cool
+		tank.ControlBody.SetAngularVelocity(tank.ControlBody.AngularVelocity()*.99)
+		tank.ControlBody.SetVelocityVector(tank.ControlBody.Velocity().Mult(.99))
 		return
 	}
 
@@ -124,28 +125,4 @@ func (tank *Tank) Location() *Location {
 
 		Turret: float32(tank.Turret.Angle()),
 	}
-}
-
-func (tank *Tank) Damage(bullet *Bullet) {
-	if !IsServer {
-		log.Println("I shouldn't be here...")
-		return
-	}
-
-	if tank.Destroyed {
-		return
-	}
-
-	tank.Destroyed = true
-	tank.Body.SetVelocity(0, 0)
-	tank.Body.SetAngularVelocity(0)
-
-	if tank.ControlBody != nil {
-		tank.ControlBody.SetVelocity(0, 0)
-		tank.ControlBody.SetAngularVelocity(0)
-	}
-
-	fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
-
-	Players.SendAll(Damage{tank.ID})
 }

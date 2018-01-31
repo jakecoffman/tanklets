@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
+	"fmt"
 )
 
 const (
@@ -15,9 +16,6 @@ const (
 
 type BulletID uint64
 
-var Bullets = map[BulletID]*Bullet{}
-var bulletCurId BulletID
-
 type Bullet struct {
 	ID       BulletID
 	PlayerID PlayerID
@@ -26,21 +24,24 @@ type Bullet struct {
 	Bounce   int
 
 	timeAlive float64
+
+	game *Game // back reference only for removing bullets from the list... can this be done elsewhere?
 }
 
-func NewBullet(firedBy *Tank, id BulletID) *Bullet {
+func (g *Game) NewBullet(firedBy *Tank, id BulletID) *Bullet {
 	bullet := &Bullet{
 		ID:       id,
 		PlayerID: firedBy.ID,
+		game: g,
 	}
-	bullet.Body = Space.AddBody(cp.NewKinematicBody())
-	bullet.Shape = Space.AddShape(cp.NewSegment(bullet.Body, cp.Vector{-2, 0}, cp.Vector{2, 0}, 3))
+	bullet.Body = g.Space.AddBody(cp.NewKinematicBody())
+	bullet.Shape = g.Space.AddShape(cp.NewSegment(bullet.Body, cp.Vector{-2, 0}, cp.Vector{2, 0}, 3))
 	//bullet.Shape.SetSensor(true)
-	bullet.Shape.SetCollisionType(COLLISION_TYPE_BULLET)
+	bullet.Shape.SetCollisionType(CollisionTypeBullet)
 	bullet.Shape.SetFilter(PlayerFilter)
 	bullet.Shape.UserData = bullet
 
-	Bullets[bullet.ID] = bullet
+	g.Bullets[bullet.ID] = bullet
 
 	return bullet
 }
@@ -49,10 +50,11 @@ func (bullet *Bullet) Update(dt float64) {
 	bullet.timeAlive += dt
 	if bullet.timeAlive > bulletTTL {
 		// don't call Destroy because it fires after the next step
-		delete(Bullets, bullet.ID)
+		delete(bullet.game.Bullets, bullet.ID)
 		bullet.Shape.UserData = nil
-		Space.RemoveShape(bullet.Shape)
-		Space.RemoveBody(bullet.Body)
+		space := bullet.Shape.Space()
+		space.RemoveShape(bullet.Shape)
+		space.RemoveBody(bullet.Body)
 		bullet.Shape = nil
 		bullet.Body = nil
 	}
@@ -63,17 +65,19 @@ func (bullet *Bullet) Size() mgl32.Vec2 {
 }
 
 func (bullet *Bullet) Destroy(now bool) {
-	delete(Bullets, bullet.ID)
+	delete(bullet.game.Bullets, bullet.ID)
 
 	if bullet.Shape == nil {
 		log.Println("Shape was removed multiple times")
 		return
 	}
 
+	space := bullet.Shape.Space()
+
 	if now {
 		bullet.Shape.UserData = nil
-		Space.RemoveShape(bullet.Shape)
-		Space.RemoveBody(bullet.Body)
+		space.RemoveShape(bullet.Shape)
+		space.RemoveBody(bullet.Body)
 		bullet.Shape = nil
 		bullet.Body = nil
 		return
@@ -81,14 +85,14 @@ func (bullet *Bullet) Destroy(now bool) {
 
 	// additions and removals can't be done in a normal callback.
 	// Schedule a post step callback to do it.
-	Space.AddPostStepCallback(func(space *cp.Space, a interface{}, b interface{}) {
+	space.AddPostStepCallback(func(s *cp.Space, a interface{}, b interface{}) {
 		if bullet.Shape == nil {
 			// this fixes a crash when a tank is touching another and shoots it
 			return
 		}
 		bullet.Shape.UserData = nil
-		space.RemoveShape(bullet.Shape)
-		space.RemoveBody(bullet.Body)
+		s.RemoveShape(bullet.Shape)
+		s.RemoveBody(bullet.Body)
 		bullet.Shape = nil
 		bullet.Body = nil
 	}, nil, nil)
@@ -117,7 +121,9 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 			return false
 		}
 
-		tank.Damage(bullet)
+		tank.Destroyed = true
+		fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
+		Players.SendAll(Damage{tank.ID})
 		bullet.Destroy(false)
 
 		bullet.Bounce = 100

@@ -2,45 +2,53 @@ package tanklets
 
 import (
 	"github.com/jakecoffman/cp"
+	"github.com/engoengine/math"
+	"github.com/jakecoffman/tanklets/gutils"
 )
 
 type PlayerID uint16
 
 var (
+	// TODO move this into client code... I think I can refactor the handlers to be in their respective packages
 	// client only
 	Me    PlayerID
-	State int
-
-	// both client and server (TODO: Server needs to sync some of this still)
-	Tanks         = map[PlayerID]*Tank{}
-	Space         *cp.Space
-	Width, Height int
-
-	Box *cp.Body
 )
 
 // Game state
 const (
-	GAME_WAITING = iota
-	GAME_PLAYING
-	GAME_DEAD
+	GameStateWaiting   = iota
+	GameStatePlaying
+	GameStateDead
 )
 
 // Collision types
 const (
-	COLLISION_TYPE_BULLET = 1
+	CollisionTypeBullet = 1
 )
 
-var PLAYER_MASK_BIT uint = 1 << 31
+var PlayerMaskBit uint = 1 << 31
 
 var PlayerFilter = cp.ShapeFilter{
-	cp.NO_GROUP, PLAYER_MASK_BIT, PLAYER_MASK_BIT,
-}
-var NotPlayerFilter = cp.ShapeFilter{
-	cp.NO_GROUP, ^PLAYER_MASK_BIT, ^PLAYER_MASK_BIT,
+	cp.NO_GROUP, PlayerMaskBit, PlayerMaskBit,
 }
 
-func NewGame(width, height float64) {
+var NotPlayerFilter = cp.ShapeFilter{
+	cp.NO_GROUP, ^PlayerMaskBit, ^PlayerMaskBit,
+}
+
+type Game struct {
+	Space   *cp.Space
+	Bullets map[BulletID]*Bullet
+	Tanks   map[PlayerID]*Tank
+
+	Box *cp.Body
+
+	State int
+
+	playerIdCursor, color, bullet *gutils.Cursor
+}
+
+func NewGame(width, height float64) *Game {
 	// physics
 	space := cp.NewSpace()
 
@@ -60,7 +68,7 @@ func NewGame(width, height float64) {
 	}
 
 	const boxSize = 25
-	Box = space.AddBody(cp.NewBody(1, cp.MomentForBox(1, boxSize, boxSize)))
+	Box := space.AddBody(cp.NewBody(1, cp.MomentForBox(1, boxSize, boxSize)))
 	boxShape := space.AddShape(cp.NewBox(Box, boxSize, boxSize, 0))
 	Box.SetPosition(cp.Vector{150, 150})
 	boxShape.SetFriction(1)
@@ -73,20 +81,29 @@ func NewGame(width, height float64) {
 	gear.SetMaxBias(0)
 	gear.SetMaxForce(5000.0) // emulate angular friction
 
-	handler := space.NewWildcardCollisionHandler(COLLISION_TYPE_BULLET)
+	handler := space.NewWildcardCollisionHandler(CollisionTypeBullet)
 	handler.PreSolveFunc = BulletPreSolve
 
-	Width = int(width)
-	Height = int(height)
-	Space = space
+	return &Game{
+		Space:   space,
+		Bullets: map[BulletID]*Bullet{},
+		Tanks:   map[PlayerID]*Tank{},
+
+		Box: Box,
+
+		// various cursors
+		playerIdCursor: gutils.NewCursor(1, 100),
+		color:          gutils.NewCursor(0, 14),
+		bullet:         gutils.NewCursor(1, math.MaxInt64),
+	}
 }
 
-func Update(dt float64) {
-	for _, tank := range Tanks {
+func (g *Game) Update(dt float64) {
+	for _, tank := range g.Tanks {
 		tank.Update(dt)
 	}
 
-	for _, bullet := range Bullets {
+	for _, bullet := range g.Bullets {
 		bullet.Update(dt)
 	}
 }

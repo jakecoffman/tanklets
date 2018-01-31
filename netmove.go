@@ -12,8 +12,8 @@ type Move struct {
 	TurretAngle float64
 }
 
-func (m *Move) Handle(addr *net.UDPAddr) {
-	tank := Tanks[Lookup[addr.String()]]
+func (m *Move) Handle(addr *net.UDPAddr, game *Game) {
+	tank := game.Tanks[Lookup[addr.String()]]
 	if tank == nil {
 		log.Println("Player not found", addr.String(), Lookup[addr.String()])
 		return

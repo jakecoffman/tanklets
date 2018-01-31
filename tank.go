@@ -52,7 +52,7 @@ type Turret struct {
 	width, height float64
 }
 
-func NewTank(id PlayerID, color mgl32.Vec3, isLocalPlayer bool) *Tank {
+func NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tank := &Tank{
 		ID:    id,
 		Color: color,

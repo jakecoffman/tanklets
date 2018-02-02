@@ -16,8 +16,7 @@ type Ping struct {
 
 func (d *Ping) Handle(addr *net.UDPAddr, game *Game) {
 	if IsServer {
-		tank := game.Tanks[Lookup[addr.String()]]
-		tank.Ping = time.Now().Sub(d.T)
+
 	} else {
 		MyPing = time.Now().Sub(d.T)
 		d.T = time.Now()

@@ -160,6 +160,13 @@ func Recv() {
 			handler = &Damage{}
 		case PING:
 			handler = &Ping{}
+			_, err = handler.Serialize(data)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			handler.Handle(addr, nil)
+			continue
 		default:
 			log.Println("Unkown message type", data[0])
 			continue

@@ -85,9 +85,9 @@ func NewGame(width, height float64) *Game {
 
 	if IsServer {
 		fmt.Println("Server making some boxes")
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 100; i++ {
 			box := game.NewBox(BoxID(i))
-			box.SetPosition(cp.Vector{X: float64(rand.Intn(600)), Y: float64(rand.Intn(600))})
+			box.SetPosition(cp.Vector{X: float64(rand.Intn(int(width-10))), Y: float64(rand.Intn(int(height-10)))})
 		}
 	}
 

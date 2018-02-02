@@ -1,9 +1,9 @@
 package glpers
 
 import (
-	"os"
-	"io/ioutil"
 	"github.com/go-gl/gl/v3.2-core/gl"
+	"github.com/jakecoffman/tanklets/client/data"
+	"bytes"
 )
 
 type resourceManager struct {
@@ -19,21 +19,8 @@ func NewResourceManager() *resourceManager {
 }
 
 func (r *resourceManager) LoadShader(vertexPath, fragmentPath, name string) *Shader {
-	var vertexCode, fragmentCode string
-
-	{
-		bytes, err := ioutil.ReadFile(vertexPath)
-		if err != nil {
-			panic(err)
-		}
-		vertexCode = string(bytes)
-
-		bytes, err = ioutil.ReadFile(fragmentPath)
-		if err != nil {
-			panic(err)
-		}
-		fragmentCode = string(bytes)
-	}
+	vertexCode := string(data.MustAsset("assets/shaders/"+vertexPath))
+	fragmentCode := string(data.MustAsset("assets/shaders/"+fragmentPath))
 
 	shader := NewShader(vertexCode, fragmentCode)
 	r.shaders[name] = shader
@@ -50,11 +37,8 @@ func (r *resourceManager) Shader(name string) *Shader {
 
 func (r *resourceManager) LoadTexture(file string, name string) *Texture2D {
 	texture := NewTexture()
-	f, err := os.Open(file)
-	if err != nil {
-		panic(err)
-	}
-	texture.Generate(f)
+	textureBytes := data.MustAsset("assets/textures/" + file)
+	texture.Generate(bytes.NewReader(textureBytes))
 	r.textures[name] = texture
 	return texture
 }

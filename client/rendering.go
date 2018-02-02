@@ -5,6 +5,8 @@ import (
 	"github.com/jakecoffman/tanklets/client/glpers"
 )
 
+//go:generate go-bindata -pkg data -o data/data.go assets/...
+
 var ResourceManager = glpers.NewResourceManager()
 
 var (
@@ -24,21 +26,22 @@ var projection mgl32.Mat4
 
 func InitResources() {
 	// shaders
-	ResourceManager.LoadShader("shaders/main.vs.glsl", "shaders/main.fs.glsl", "sprite")
-	ResourceManager.LoadShader("shaders/simple.vs.glsl", "shaders/simple.fs.glsl", "simple")
-	ResourceManager.LoadShader("shaders/text.vs.glsl", "shaders/text.fs.glsl", "text")
-	ResourceManager.LoadShader("shaders/cp.vs.glsl", "shaders/cp.fs.glsl", "cp")
+	ResourceManager.LoadShader("main.vs.glsl", "main.fs.glsl", "sprite")
+	ResourceManager.LoadShader("simple.vs.glsl", "simple.fs.glsl", "simple")
+	ResourceManager.LoadShader("text.vs.glsl", "text.fs.glsl", "text")
+	ResourceManager.LoadShader("cp.vs.glsl", "cp.fs.glsl", "cp")
 
 	// renderers
-	projection = mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0)
-	Text = glpers.NewTextRenderer(ResourceManager.Shader("text"), float32(screenWidth), float32(screenHeight), "textures/Roboto-Light.ttf")
+	w, h := float32(screenWidth), float32(screenHeight)
+	projection = mgl32.Ortho2D(0, w, h, 0)
+	Text = glpers.NewTextRenderer(ResourceManager.Shader("text"), w, h, "Roboto-Light.ttf")
 	Text.SetColor(.8, .8, .3, 1)
 	Simple = glpers.NewSimpleRenderer(ResourceManager.Shader("simple"), projection)
 	Renderer = glpers.NewSpriteRenderer(ResourceManager.Shader("sprite"), projection)
 	SpaceRenderer = glpers.NewCPRenderer(ResourceManager.Shader("cp"), projection)
 
 	// textures
-	tankTexture = ResourceManager.LoadTexture("textures/tank.png", "tank")
-	turretTexture = ResourceManager.LoadTexture("textures/turret.png", "turret")
-	bulletTexture = ResourceManager.LoadTexture("textures/bullet.png", "bullet")
+	tankTexture = ResourceManager.LoadTexture("tank.png", "tank")
+	turretTexture = ResourceManager.LoadTexture("turret.png", "turret")
+	bulletTexture = ResourceManager.LoadTexture("bullet.png", "bullet")
 }

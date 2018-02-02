@@ -34,8 +34,7 @@ func NewTexture() *Texture2D {
 	}
 }
 
-func (t *Texture2D) Generate(reader io.ReadCloser) error {
-	defer reader.Close()
+func (t *Texture2D) Generate(reader io.Reader) error {
 	img, _, err := image.Decode(reader)
 	if err != nil {
 		return err

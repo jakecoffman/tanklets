@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"io/ioutil"
-	"os"
 
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
@@ -13,6 +11,7 @@ import (
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
+	"github.com/jakecoffman/tanklets/client/data"
 )
 
 type TextRenderer struct {
@@ -55,21 +54,12 @@ func NewTextRenderer(shader *Shader, width, height float32, fontPath string) *Te
 }
 
 func (t *TextRenderer) Load(fontPath string, scale uint32) error {
-	fd, err := os.Open(fontPath)
-	if err != nil {
-		return err
-	}
-	defer fd.Close()
-
 	low := rune(32)
 	high := rune(127)
 
-	data, err := ioutil.ReadAll(fd)
-	if err != nil {
-		return err
-	}
+	fontData := data.MustAsset("assets/textures/"+fontPath)
 
-	ttf, err := truetype.Parse(data)
+	ttf, err := truetype.Parse(fontData)
 	if err != nil {
 		return err
 	}

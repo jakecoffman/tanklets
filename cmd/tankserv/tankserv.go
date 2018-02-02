@@ -25,9 +25,9 @@ func main() {
 	fmt.Println("Server Running")
 
 	var hasHadPlayersConnect bool
-	accumulator := 0.
-	lastFrame := time.Now()
+	var accumulator float64
 	var dt time.Duration
+	lastFrame := time.Now()
 
 	physicsTick := time.Tick(time.Second / physicsTicks)
 	updateTick := time.Tick(serverUpdates)

@@ -15,12 +15,13 @@ var SimulatedNetworkLatencyMS = 100
 
 // Message type IDs
 const (
-	INIT = iota
+	INIT        = iota
 	JOIN
 	DISCONNECT
 	MOVE
 	SHOOT
 	LOCATION
+	BOXLOCATION
 	DAMAGE
 	PING
 )
@@ -153,6 +154,8 @@ func Recv() {
 			handler = &Shoot{}
 		case LOCATION:
 			handler = &Location{}
+		case BOXLOCATION:
+			handler = &BoxLocation{}
 		case DAMAGE:
 			handler = &Damage{}
 		case PING:

@@ -4,6 +4,8 @@ import (
 	"github.com/jakecoffman/cp"
 	"github.com/engoengine/math"
 	"github.com/jakecoffman/tanklets/gutils"
+	"math/rand"
+	"fmt"
 )
 
 type PlayerID uint16
@@ -11,12 +13,12 @@ type PlayerID uint16
 var (
 	// TODO move this into client code... I think I can refactor the handlers to be in their respective packages
 	// client only
-	Me    PlayerID
+	Me PlayerID
 )
 
 // Game state
 const (
-	GameStateWaiting   = iota
+	GameStateWaiting = iota
 	GameStatePlaying
 	GameStateDead
 )
@@ -36,12 +38,14 @@ var NotPlayerFilter = cp.ShapeFilter{
 	cp.NO_GROUP, ^PlayerMaskBit, ^PlayerMaskBit,
 }
 
+type BoxID uint16
+
 type Game struct {
-	Space   *cp.Space
+	Space *cp.Space
+
 	Bullets map[BulletID]*Bullet
 	Tanks   map[PlayerID]*Tank
-
-	Box *cp.Body
+	Boxes   map[BoxID]*Box
 
 	State int
 
@@ -51,6 +55,18 @@ type Game struct {
 func NewGame(width, height float64) *Game {
 	// physics
 	space := cp.NewSpace()
+
+	game := &Game{
+		Space:   space,
+		Bullets: map[BulletID]*Bullet{},
+		Tanks:   map[PlayerID]*Tank{},
+		Boxes:   map[BoxID]*Box{},
+
+		// various cursors
+		playerIdCursor: gutils.NewCursor(1, 100),
+		color:          gutils.NewCursor(0, 14),
+		bullet:         gutils.NewCursor(1, math.MaxInt64),
+	}
 
 	sides := []cp.Vector{
 		// outer walls
@@ -67,35 +83,18 @@ func NewGame(width, height float64) *Game {
 		seg.SetFilter(PlayerFilter)
 	}
 
-	const boxSize = 25
-	Box := space.AddBody(cp.NewBody(1, cp.MomentForBox(1, boxSize, boxSize)))
-	boxShape := space.AddShape(cp.NewBox(Box, boxSize, boxSize, 0))
-	Box.SetPosition(cp.Vector{150, 150})
-	boxShape.SetFriction(1)
-
-	pivot := space.AddConstraint(cp.NewPivotJoint2(space.StaticBody, Box, cp.Vector{}, cp.Vector{}))
-	pivot.SetMaxBias(0)       // disable joint correction
-	pivot.SetMaxForce(1000.0) // emulate linear friction
-
-	gear := space.AddConstraint(cp.NewGearJoint(space.StaticBody, Box, 0.0, 1.0))
-	gear.SetMaxBias(0)
-	gear.SetMaxForce(5000.0) // emulate angular friction
+	if IsServer {
+		fmt.Println("Server making some boxes")
+		for i := 0; i < 10; i++ {
+			box := game.NewBox(BoxID(i))
+			box.SetPosition(cp.Vector{X: float64(rand.Intn(600)), Y: float64(rand.Intn(600))})
+		}
+	}
 
 	handler := space.NewWildcardCollisionHandler(CollisionTypeBullet)
 	handler.PreSolveFunc = BulletPreSolve
 
-	return &Game{
-		Space:   space,
-		Bullets: map[BulletID]*Bullet{},
-		Tanks:   map[PlayerID]*Tank{},
-
-		Box: Box,
-
-		// various cursors
-		playerIdCursor: gutils.NewCursor(1, 100),
-		color:          gutils.NewCursor(0, 14),
-		bullet:         gutils.NewCursor(1, math.MaxInt64),
-	}
+	return game
 }
 
 func (g *Game) Update(dt float64) {

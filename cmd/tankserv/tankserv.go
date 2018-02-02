@@ -16,7 +16,6 @@ const (
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	game := tanklets.NewGame(800, 600)
 	tanklets.IsServer = true
 	tanklets.NetInit("0.0.0.0:1234")
 	defer func() { fmt.Println(tanklets.NetClose()) }()
@@ -37,6 +36,8 @@ func main() {
 			tanklets.Players.SendAll(ping)
 		}
 	}()
+
+	game := tanklets.NewGame(800, 600)
 
 	for {
 		currentFrame := time.Now()
@@ -75,6 +76,9 @@ func main() {
 				// 58 bytes per n players, 10 times per second = 580n^2
 				for _, tank := range game.Tanks {
 					tanklets.Players.SendAll(tank.Location())
+				}
+				for _, box := range game.Boxes {
+					tanklets.Players.SendAll(box.Location())
 				}
 			}
 		}

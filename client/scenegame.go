@@ -77,6 +77,10 @@ func (g *GameScene) Render() {
 		DrawBullet(g.game, bullet)
 	}
 
+	//for _, box := range g.game.Boxes {
+	//	DrawBox(g.game, box)
+	//}
+
 	if g.game.State == tanklets.GameStateWaiting {
 		Text.Print("Connecting", 50, 100, 1)
 	}

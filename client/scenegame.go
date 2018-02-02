@@ -23,7 +23,6 @@ type GameScene struct {
 
 func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
 	game := tanklets.NewGame(800, 600)
-	tanklets.NetInit()
 
 	w.SetMouseButtonCallback(MouseButtonCallback)
 

@@ -15,7 +15,8 @@ var SimulatedNetworkLatencyMS = 100
 
 // Message type IDs
 const (
-	JOIN = iota
+	INIT = iota
+	JOIN
 	DISCONNECT
 	MOVE
 	SHOOT
@@ -24,10 +25,7 @@ const (
 	PING
 )
 
-var ServerAddr = &net.UDPAddr{
-	Port: 1234,
-	IP:   net.ParseIP("127.0.0.1"),
-}
+var ServerAddr *net.UDPAddr
 var udpConn *net.UDPConn
 var IsServer bool
 
@@ -68,30 +66,47 @@ func init() {
 	}()
 }
 
-func NetInit() {
+var ClientIsConnected, ClientIsConnecting bool
+
+func NetInit(addr string) error {
 	var err error
+
+	ServerAddr, err = net.ResolveUDPAddr("udp", addr)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
 
 	if IsServer {
 		fmt.Println("Init server connection")
 		udpConn, err = net.ListenUDP("udp", ServerAddr)
 		if err != nil {
 			log.Fatal(err)
+			return err
 		}
 	} else {
+		ClientIsConnected = false
+		ClientIsConnecting = true
 		fmt.Println("Init client connection")
 		udpConn, err = net.DialUDP("udp", nil, ServerAddr)
 		if err != nil {
-			log.Fatal(err)
+			ClientIsConnecting = false
+			log.Println(err)
+			return err
 		}
+
+		defer ClientSend(Init{})
 	}
 
 	udpConn.SetReadBuffer(1048576)
 
 	go Recv()
+	return nil
 }
 
 func NetClose() error {
 	fmt.Println("Net close")
+	ClientIsConnected = false
 	return udpConn.Close()
 }
 
@@ -111,6 +126,7 @@ func Recv() {
 		} else {
 			n, err = bufio.NewReader(udpConn).Read(data)
 			if err != nil {
+				ClientIsConnected = false
 				log.Println(err)
 				return
 			}
@@ -119,6 +135,14 @@ func Recv() {
 
 		var handler Handler
 		switch data[0] {
+		case INIT:
+			if !IsServer {
+				init := &Init{}
+				init.Handle(addr, nil)
+				continue
+			} else {
+				handler = &Init{}
+			}
 		case JOIN:
 			handler = &Join{}
 		case DISCONNECT:

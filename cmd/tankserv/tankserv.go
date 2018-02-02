@@ -18,7 +18,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	game := tanklets.NewGame(800, 600)
 	tanklets.IsServer = true
-	tanklets.NetInit()
+	tanklets.NetInit("0.0.0.0:1234")
 	defer func() { fmt.Println(tanklets.NetClose()) }()
 
 	fmt.Println("Server Running")

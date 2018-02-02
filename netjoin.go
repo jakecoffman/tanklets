@@ -41,7 +41,7 @@ func (j *Join) Handle(addr *net.UDPAddr, game *Game) {
 
 	if IsServer {
 		fmt.Println("Handling join")
-		tank = game.NewTank(PlayerID(game.playerIdCursor.Next()), GetColor(game.color.Next()))
+		tank = game.NewTank(Lookup[addr.String()], GetColor(game.color.Next()))
 		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
 		// tell this player their ID
 		ServerSend(Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
@@ -50,6 +50,9 @@ func (j *Join) Handle(addr *net.UDPAddr, game *Game) {
 		ServerSend(loc, addr)
 		join := Join{tank.ID, 0, f32.Vec3(tank.Color)}
 		Players.Each(func (id PlayerID, p *net.UDPAddr) {
+			if id == tank.ID {
+				return
+			}
 			// tell all players about this player
 			ServerSend(join, p)
 			ServerSend(loc, p)

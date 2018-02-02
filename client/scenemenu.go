@@ -4,33 +4,37 @@ import (
 	"github.com/golang-ui/nuklear/nk"
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"time"
+	"github.com/jakecoffman/tanklets"
 )
 
 const (
-	PlayNone = iota
+	PlayMenu   = iota
 	PlayOnline
 	PlayHost
-	PlayLAN
+	PlayJoin
 )
 
 type MainMenuScene struct {
-	window *glfw.Window
-	ctx *nk.Context
-	state      int
-	textBuffer []byte
+	window   *glfw.Window
+	ctx      *nk.Context
+	state    int
+	joinText []byte
+
+	startedConnecting time.Time
 }
 
 func NewMainMenuScene(w *glfw.Window, ctx *nk.Context) Scene {
 	// TODO load resources here
 	return &MainMenuScene{
-		window: w,
-		ctx: ctx,
-		state:      PlayNone,
-		textBuffer: make([]byte, textBufferSize),
+		window:   w,
+		ctx:      ctx,
+		state:    PlayMenu,
+		joinText: make([]byte, joinTextSize),
 	}
 }
 
-const textBufferSize = 256*1024
+const joinTextSize = 256
 
 func (m *MainMenuScene) Update(dt float64) {
 
@@ -46,40 +50,45 @@ func (m *MainMenuScene) Render() {
 
 	if update > 0 {
 		switch m.state {
-		case PlayLAN:
+		case PlayJoin:
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				nk.NkEditStringZeroTerminated(ctx, nk.EditSimple, m.textBuffer, textBufferSize, nk.NkFilterDefault)
-				nk.NkLayoutRowDynamic(ctx, 0, 2)
-				{
-					if nk.NkButtonLabel(ctx, "Connect") > 0 {
-						m.state = PlayNone
+				if tanklets.ClientIsConnected {
+					nk.NkLabel(ctx, "Connected!", nk.TextLeft)
+				} else {
+					if time.Now().Sub(m.startedConnecting) > 2*time.Second {
+						nk.NkLabel(ctx, "Timed out!", nk.TextLeft)
+						tanklets.ClientIsConnecting = false
 					}
-					if nk.NkButtonLabel(ctx, "Cancel") > 0 {
-						m.state = PlayNone
+
+					if tanklets.ClientIsConnecting {
+						nk.NkLabel(ctx, "Connecting...", nk.TextLeft)
 					}
 				}
 			}
-			nk.NkLayoutRowDynamic(ctx, 100, 1)
+			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				str := "I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. I am a very model of a modern individual. "
-				nk.NkEditStringZeroTerminated(ctx, nk.EditBox, []byte(str), int32(len(str)), nk.NkFilterDefault)
+				if nk.NkButtonLabel(ctx, "Cancel") > 0 {
+					m.state = PlayMenu
+				}
 			}
 		default:
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				if nk.NkButtonLabel(ctx, "Play") > 0 {
-					m.state = PlayOnline
+				if nk.NkButtonLabel(ctx, "Play Online") > 0 {
+					m.state = PlayJoin
+					m.startedConnecting = time.Now()
+					tanklets.NetInit("127.0.0.1:1234")
 				}
 			}
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				nk.NkLabel(ctx, "LAN", nk.TextLeft)
-				if nk.NkButtonLabel(ctx, "Host") > 0 {
-					m.state = PlayHost
-				}
+				nk.NkLabel(ctx, "Join Custom", nk.TextLeft)
+				nk.NkEditStringZeroTerminated(ctx, nk.EditSimple, m.joinText, joinTextSize, nk.NkFilterDefault)
 				if nk.NkButtonLabel(ctx, "Join") > 0 {
-					m.state = PlayLAN
+					m.state = PlayJoin
+					m.startedConnecting = time.Now()
+					tanklets.NetInit(string(m.joinText))
 				}
 			}
 		}
@@ -90,7 +99,7 @@ func (m *MainMenuScene) Render() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 
-	if m.state == PlayOnline {
+	if tanklets.ClientIsConnected {
 		CurrentScene = NewGameScene(m.window, ctx)
 		m.Destroy()
 	}

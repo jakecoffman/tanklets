@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jakecoffman/tanklets"
+	"math/rand"
 )
 
 const (
@@ -15,6 +16,7 @@ const (
 )
 
 func main() {
+	rand.Seed(time.Now().Unix())
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	tanklets.IsServer = true
 	tanklets.NetInit("0.0.0.0:1234")
@@ -78,9 +80,15 @@ func main() {
 					tanklets.Players.SendAll(tank.Location())
 				}
 				for _, box := range game.Boxes {
-					tanklets.Players.SendAll(box.Location())
+					loc := box.Location()
+					if loc != BoxLocations[box.ID] {
+						tanklets.Players.SendAll(loc)
+						BoxLocations[box.ID] = loc
+					}
 				}
 			}
 		}
 	}
 }
+
+var BoxLocations = map[tanklets.BoxID]tanklets.BoxLocation{}

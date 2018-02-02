@@ -28,8 +28,8 @@ func (g *Game) NewBox(id BoxID) *Box {
 	return g.Boxes[id]
 }
 
-func (b *Box) Location() *BoxLocation {
-	return &BoxLocation{
+func (b *Box) Location() BoxLocation {
+	return BoxLocation{
 		ID:              b.ID,
 		X:               float32(b.Body.Position().X),
 		Y:               float32(b.Body.Position().Y),

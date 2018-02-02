@@ -42,7 +42,7 @@ func (j *Join) Handle(addr *net.UDPAddr, game *Game) {
 	if IsServer {
 		fmt.Println("Handling join")
 		tank = game.NewTank(Lookup[addr.String()], GetColor(game.color.Next()))
-		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(400)), 10 + float64(rand.Intn(400))})
+		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(790)), 10 + float64(rand.Intn(580))})
 		// tell this player their ID
 		ServerSend(Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
 		loc := tank.Location()
@@ -61,6 +61,10 @@ func (j *Join) Handle(addr *net.UDPAddr, game *Game) {
 			ServerSend(Join{id, 0, f32.Vec3(thisTank.Color)}, addr)
 			ServerSend(thisTank.Location(), addr)
 		})
+		// Tell this player about the level
+		for _, box := range game.Boxes {
+			ServerSend(box.Location(), addr)
+		}
 		Lookup[addr.String()] = tank.ID
 		Players.Put(tank.ID, addr)
 	} else {

@@ -10,13 +10,31 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-	serverCmd := exec.Command("go", "run", "cmd/tankserv/tankserv.go")
+	cmd1 := exec.Command("go", "install")
+	cmd1.Dir = "cmd/tankserv"
+	cmd1.Env = os.Environ()
+	start(cmd1)
+	if err := cmd1.Wait(); err != nil {
+		return
+	}
+
+	cmd2 := exec.Command("go", "install")
+	cmd2.Dir = "cmd/tanklets"
+	cmd2.Env = os.Environ()
+	start(cmd2)
+	if err := cmd2.Wait(); err != nil {
+		return
+	}
+
+	serverCmd := exec.Command("tankserv")
+	serverCmd.Env = os.Environ()
 	start(serverCmd)
 
-	game1Cmd := exec.Command("go", "run", "cmd/tanklets/tanklets.go")
+	game1Cmd := exec.Command("tanklets")
+	game1Cmd.Env = os.Environ()
 	start(game1Cmd)
-
-	game2Cmd := exec.Command("go", "run", "cmd/tanklets/tanklets.go", "650")
+	game2Cmd := exec.Command("tanklets", "650")
+	game2Cmd.Env = os.Environ()
 	start(game2Cmd)
 
 	game1Cmd.Wait()

@@ -4,7 +4,6 @@ import (
 	"github.com/jakecoffman/cp"
 	"github.com/engoengine/math"
 	"github.com/jakecoffman/tanklets/gutils"
-	"math/rand"
 	"fmt"
 )
 
@@ -85,9 +84,15 @@ func NewGame(width, height float64) *Game {
 
 	if IsServer {
 		fmt.Println("Server making some boxes")
-		for i := 0; i < 100; i++ {
-			box := game.NewBox(BoxID(i))
-			box.SetPosition(cp.Vector{X: float64(rand.Intn(int(width-10))), Y: float64(rand.Intn(int(height-10)))})
+		w, h := int(width), int(height)
+		boxIdCursor := gutils.NewCursor(0, 1e9)
+		for i := 10; i<h; i += 50 {
+			box := game.NewBox(BoxID(boxIdCursor.Next()))
+			box.SetPosition(cp.Vector{X: width/2, Y: float64(i)})
+		}
+		for i := 10; i<w; i += 50 {
+			box := game.NewBox(BoxID(boxIdCursor.Next()))
+			box.SetPosition(cp.Vector{X: float64(i), Y: height/2})
 		}
 	}
 

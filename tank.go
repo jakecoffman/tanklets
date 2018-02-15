@@ -41,6 +41,7 @@ type Tank struct {
 
 	NextMove, LastMove Move
 	Ping time.Duration // tank ping in ns
+	Ready bool
 }
 
 type Turret struct {

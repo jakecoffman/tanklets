@@ -20,6 +20,8 @@ const (
 	GameStateWaiting = iota
 	GameStatePlaying
 	GameStateDead
+	GameStateWin
+	GameStateEveryoneDied
 )
 
 // Collision types
@@ -109,5 +111,23 @@ func (g *Game) Update(dt float64) {
 
 	for _, bullet := range g.Bullets {
 		bullet.Update(dt)
+	}
+
+	if !IsServer {
+		return
+	}
+
+	if g.State == GameStateWaiting && len(g.Tanks) > 0 {
+		allReady := true
+		for _, t := range g.Tanks {
+			if !t.Ready {
+				allReady = false
+				break
+			}
+		}
+		if allReady {
+			g.State = GameStatePlaying
+			Players.SendAll(State{state: GameStatePlaying})
+		}
 	}
 }

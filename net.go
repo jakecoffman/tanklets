@@ -17,6 +17,8 @@ var SimulatedNetworkLatencyMS = 100
 const (
 	INIT        = iota
 	JOIN
+	READY
+	STATE
 	DISCONNECT
 	MOVE
 	SHOOT
@@ -144,20 +146,6 @@ func Recv() {
 			} else {
 				handler = &Init{}
 			}
-		case JOIN:
-			handler = &Join{}
-		case DISCONNECT:
-			handler = &Disconnect{}
-		case MOVE:
-			handler = &Move{}
-		case SHOOT:
-			handler = &Shoot{}
-		case LOCATION:
-			handler = &Location{}
-		case BOXLOCATION:
-			handler = &BoxLocation{}
-		case DAMAGE:
-			handler = &Damage{}
 		case PING:
 			handler = &Ping{}
 			_, err = handler.Serialize(data)
@@ -167,6 +155,15 @@ func Recv() {
 			}
 			handler.Handle(addr, nil)
 			continue
+		case JOIN: handler = &Join{}
+		case READY: handler = &Ready{}
+		case STATE: handler = &State{}
+		case DISCONNECT: handler = &Disconnect{}
+		case MOVE: handler = &Move{}
+		case SHOOT: handler = &Shoot{}
+		case LOCATION: handler = &Location{}
+		case BOXLOCATION: handler = &BoxLocation{}
+		case DAMAGE: handler = &Damage{}
 		default:
 			log.Println("Unkown message type", data[0])
 			continue
@@ -184,19 +181,6 @@ func Recv() {
 			<-Incomings
 			Incomings <- incoming
 			log.Println("Error: queue is full, dropping message")
-		}
-	}
-}
-
-// ProcessIncoming runs on the game thread and handles all incoming messages that are queued
-func ProcessIncoming(game *Game) {
-	for {
-		select {
-		case incoming := <-Incomings:
-			incoming.Handler.Handle(incoming.Addr, game)
-		default:
-			// no data to process this frame
-			return
 		}
 	}
 }

@@ -74,7 +74,6 @@ func (j *Join) Handle(addr *net.UDPAddr, game *Game) {
 			fmt.Println("Oh, it's me!")
 			Me = tank.ID
 			//Player = player
-			game.State = GameStatePlaying
 		}
 	}
 	game.Tanks[tank.ID] = tank

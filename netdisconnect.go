@@ -24,7 +24,7 @@ func (d Disconnect) Handle(addr *net.UDPAddr, game *Game) {
 		game.Tanks[playerID].Destroyed = true
 
 		// tell others they left & destroyed
-		Players.SendAll(Disconnect{ID: playerID}, Damage{ID: playerID})
+		Players.SendAll(Disconnect{ID: playerID}, Damage{ID: playerID, Killer: playerID})
 	} else {
 		fmt.Println("Client", Me, "-- Player", d.ID, "Has disonnceted")
 	}

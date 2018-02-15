@@ -13,6 +13,10 @@ type Move struct {
 }
 
 func (m *Move) Handle(addr *net.UDPAddr, game *Game) {
+	if game.State != GameStatePlaying {
+		return
+	}
+
 	tank := game.Tanks[Lookup[addr.String()]]
 	if tank == nil {
 		log.Println("Player not found", addr.String(), Lookup[addr.String()])

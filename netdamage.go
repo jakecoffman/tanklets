@@ -8,6 +8,7 @@ import (
 
 type Damage struct {
 	ID PlayerID
+	Killer PlayerID
 }
 
 func (d *Damage) Handle(addr *net.UDPAddr, game *Game) {
@@ -37,5 +38,6 @@ func (d *Damage) Serialize(b []byte) ([]byte, error) {
 	var m uint8 = DAMAGE
 	stream.Uint8(&m)
 	stream.Uint16((*uint16)(&d.ID))
+	stream.Uint16((*uint16)(&d.Killer))
 	return stream.Bytes()
 }

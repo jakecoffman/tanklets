@@ -19,6 +19,7 @@ type GameScene struct {
 	ctx *nk.Context
 
 	game *tanklets.Game
+	isReady bool
 }
 
 func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
@@ -39,8 +40,6 @@ var accumulator = 0.
 const physicsTickrate = 1.0 / 180.0
 
 func (g *GameScene) Update(dt float64) {
-	tanklets.ProcessIncoming(g.game)
-
 	accumulator += dt
 	for accumulator >= physicsTickrate {
 		myTank := g.game.Tanks[tanklets.Me]
@@ -52,6 +51,16 @@ func (g *GameScene) Update(dt float64) {
 		accumulator -= physicsTickrate
 	}
 
+network:
+	for {
+		select {
+		case incoming := <-tanklets.Incomings:
+			incoming.Handler.Handle(incoming.Addr, g.game)
+		default:
+			// no data to process this frame
+			break network
+		}
+	}
 	ProcessInput(g.game)
 	g.game.Update(dt)
 }
@@ -106,6 +115,29 @@ func (g *GameScene) Render() {
 		}
 	}
 	nk.NkEnd(g.ctx)
+
+	if g.game.State == tanklets.GameStateWaiting {
+		bounds := nk.NkRect(100, 50, 400, 140)
+		update := nk.NkBegin(g.ctx, "Ready", bounds, nk.WindowTitle | nk.WindowBorder)
+
+		if update > 0 {
+			nk.NkLayoutRowDynamic(g.ctx, 0, 1)
+			{
+				nk.NkLabel(g.ctx, "Waiting for all users to ready up...", nk.TextLeft)
+				if !g.isReady {
+					if nk.NkButtonLabel(g.ctx, "Ready") > 0 {
+						g.isReady = true
+						LeftClick = false
+						tanklets.ClientSend(tanklets.Ready{})
+						tanklets.ClientSend(tanklets.Ready{})
+						tanklets.ClientSend(tanklets.Ready{})
+					}
+				}
+			}
+		}
+		nk.NkEnd(g.ctx)
+	}
+
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }
 

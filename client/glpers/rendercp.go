@@ -11,6 +11,8 @@ import (
 type CPRenderer struct {
 	shader   *Shader
 	vao, vbo uint32
+
+	triangles []Triangle
 }
 
 func NewCPRenderer(shader *Shader, projection mgl32.Mat4) *CPRenderer {
@@ -42,8 +44,8 @@ func NewCPRenderer(shader *Shader, projection mgl32.Mat4) *CPRenderer {
 	}
 }
 
-func (r *CPRenderer) SetProjection(projection mgl32.Mat4) {
-	r.shader.Use().SetMat4("projection", projection)
+func (cpr *CPRenderer) SetProjection(projection mgl32.Mat4) {
+	cpr.shader.Use().SetMat4("projection", projection)
 }
 
 const (
@@ -55,32 +57,22 @@ type FColor struct {
 	R, G, B, A float32
 }
 
-func (r *CPRenderer) DrawSpace(space *cp.Space) {
-	ClearRenderer()
+func (cpr *CPRenderer) DrawSpace(space *cp.Space, drawConstraints bool) {
+	cpr.ClearRenderer()
 	space.EachShape(func(obj *cp.Shape) {
-		DrawShape(obj)
+		cpr.DrawShape(obj)
 	})
-	r.FlushRenderer()
+	cpr.FlushRenderer()
 
-	//for _, constraint := range space.constraints {
-	//	DrawConstraint(constraint, options)
-	//}
-
-	//for _, arb := range space.arbiters {
-	//	n := arb.n
-	//
-	//	for j := 0; j < arb.count; j++ {
-	//		p1 := arb.body_a.p.Add(arb.contacts[j].r1)
-	//		p2 := arb.body_b.p.Add(arb.contacts[j].r2)
-	//
-	//		a := p1.Add(n.Mult(-2))
-	//		b := p2.Add(n.Mult(2))
-	//		drawSeg(a, b, options.CollisionPointColor(), data)
-	//	}
-	//}
+	if drawConstraints {
+		space.EachConstraint(func(constraint *cp.Constraint) {
+			// TODO
+			cp.DrawConstraint(constraint, nil)
+		})
+	}
 }
 
-func DrawShape(shape *cp.Shape) {
+func (cpr *CPRenderer) DrawShape(shape *cp.Shape) {
 	body := shape.Body()
 
 	outline := FColor{1, 1, 1, 1}
@@ -89,10 +81,10 @@ func DrawShape(shape *cp.Shape) {
 	switch shape.Class.(type) {
 	case *cp.Circle:
 		circle := shape.Class.(*cp.Circle)
-		DrawCircle(circle.TransformC(), body.Angle(), circle.Radius(), outline, fill)
+		cpr.DrawCircle(circle.TransformC(), body.Angle(), circle.Radius(), outline, fill)
 	case *cp.Segment:
 		seg := shape.Class.(*cp.Segment)
-		DrawFatSegment(seg.TransformA(), seg.TransformB(), seg.Radius(), outline, fill)
+		cpr.DrawFatSegment(seg.TransformA(), seg.TransformB(), seg.Radius(), outline, fill)
 	case *cp.PolyShape:
 		poly := shape.Class.(*cp.PolyShape)
 
@@ -102,24 +94,24 @@ func DrawShape(shape *cp.Shape) {
 		for i := 0; i < count; i++ {
 			verts[i] = poly.TransformVert(i)
 		}
-		DrawPolygon(count, verts, poly.Radius(), outline, fill)
+		cpr.DrawPolygon(count, verts, poly.Radius(), outline, fill)
 	default:
 		panic("Unknown shape type")
 	}
 }
 
 // 8 bytes
-type v2f struct {
+type vf struct {
 	x, y float32
 }
 
-func V2f(v cp.Vector) v2f {
-	return v2f{float32(v.X), float32(v.Y)}
+func v2f(v cp.Vector) vf {
+	return vf{float32(v.X), float32(v.Y)}
 }
 
 // 8*2 + 16*2 bytes = 48 bytes
 type Vertex struct {
-	vertex, aa_coord          v2f
+	vertex, aa_coord          vf
 	fill_color, outline_color FColor
 }
 
@@ -127,31 +119,29 @@ type Triangle struct {
 	a, b, c Vertex
 }
 
-var triangleStack []Triangle = []Triangle{}
-
-func DrawCircle(pos cp.Vector, angle, radius float64, outline, fill FColor) {
+func (cpr *CPRenderer) DrawCircle(pos cp.Vector, angle, radius float64, outline, fill FColor) {
 	r := radius + 1/DrawPointLineScale
 	a := Vertex{
-		v2f{float32(pos.X - r), float32(pos.Y - r)},
-		v2f{-1, -1},
+		vf{float32(pos.X - r), float32(pos.Y - r)},
+		vf{-1, -1},
 		fill,
 		outline,
 	}
 	b := Vertex{
-		v2f{float32(pos.X - r), float32(pos.Y + r)},
-		v2f{-1, 1},
+		vf{float32(pos.X - r), float32(pos.Y + r)},
+		vf{-1, 1},
 		fill,
 		outline,
 	}
 	c := Vertex{
-		v2f{float32(pos.X + r), float32(pos.Y + r)},
-		v2f{1, 1},
+		vf{float32(pos.X + r), float32(pos.Y + r)},
+		vf{1, 1},
 		fill,
 		outline,
 	}
 	d := Vertex{
-		v2f{float32(pos.X + r), float32(pos.Y - r)},
-		v2f{1, -1},
+		vf{float32(pos.X + r), float32(pos.Y - r)},
+		vf{1, -1},
 		fill,
 		outline,
 	}
@@ -159,21 +149,21 @@ func DrawCircle(pos cp.Vector, angle, radius float64, outline, fill FColor) {
 	t0 := Triangle{a, b, c}
 	t1 := Triangle{a, c, d}
 
-	triangleStack = append(triangleStack, t0)
-	triangleStack = append(triangleStack, t1)
+	cpr.triangles = append(cpr.triangles, t0)
+	cpr.triangles = append(cpr.triangles, t1)
 
-	DrawFatSegment(pos, pos.Add(cp.ForAngle(angle).Mult(radius-DrawPointLineScale*0.5)), 0, outline, fill)
+	cpr.DrawFatSegment(pos, pos.Add(cp.ForAngle(angle).Mult(radius-DrawPointLineScale*0.5)), 0, outline, fill)
 }
 
-func DrawSegment(a, b cp.Vector, fill FColor) {
-	DrawFatSegment(a, b, 0, fill, fill)
+func (cpr *CPRenderer) DrawSegment(a, b cp.Vector, fill FColor) {
+	cpr.DrawFatSegment(a, b, 0, fill, fill)
 }
 
-func DrawFatSegment(a, b cp.Vector, radius float64, outline, fill FColor) {
+func (cpr *CPRenderer) DrawFatSegment(a, b cp.Vector, radius float64, outline, fill FColor) {
 	n := b.Sub(a).ReversePerp().Normalize()
 	t := n.ReversePerp()
 
-	var half float64 = 1.0 / DrawPointLineScale
+	var half = 1.0 / DrawPointLineScale
 	r := radius + half
 
 	if r <= half {
@@ -183,55 +173,55 @@ func DrawFatSegment(a, b cp.Vector, radius float64, outline, fill FColor) {
 
 	nw := n.Mult(r)
 	tw := t.Mult(r)
-	v0 := V2f(b.Sub(nw.Add(tw)))
-	v1 := V2f(b.Add(nw.Sub(tw)))
-	v2 := V2f(b.Sub(nw))
-	v3 := V2f(b.Add(nw))
-	v4 := V2f(a.Sub(nw))
-	v5 := V2f(a.Add(nw))
-	v6 := V2f(a.Sub(nw.Sub(tw)))
-	v7 := V2f(a.Add(nw.Add(tw)))
+	v0 := v2f(b.Sub(nw.Add(tw)))
+	v1 := v2f(b.Add(nw.Sub(tw)))
+	v2 := v2f(b.Sub(nw))
+	v3 := v2f(b.Add(nw))
+	v4 := v2f(a.Sub(nw))
+	v5 := v2f(a.Add(nw))
+	v6 := v2f(a.Sub(nw.Sub(tw)))
+	v7 := v2f(a.Add(nw.Add(tw)))
 
 	t0 := Triangle{
-		Vertex{v0, v2f{1, -1}, fill, outline},
-		Vertex{v1, v2f{1, 1}, fill, outline},
-		Vertex{v2, v2f{0, -1}, fill, outline},
+		Vertex{v0, vf{1, -1}, fill, outline},
+		Vertex{v1, vf{1, 1}, fill, outline},
+		Vertex{v2, vf{0, -1}, fill, outline},
 	}
 	t1 := Triangle{
-		Vertex{v3, v2f{0, 1}, fill, outline},
-		Vertex{v1, v2f{1, 1}, fill, outline},
-		Vertex{v2, v2f{0, -1}, fill, outline},
+		Vertex{v3, vf{0, 1}, fill, outline},
+		Vertex{v1, vf{1, 1}, fill, outline},
+		Vertex{v2, vf{0, -1}, fill, outline},
 	}
 	t2 := Triangle{
-		Vertex{v3, v2f{0, 1}, fill, outline},
-		Vertex{v4, v2f{0, -1}, fill, outline},
-		Vertex{v2, v2f{0, -1}, fill, outline},
+		Vertex{v3, vf{0, 1}, fill, outline},
+		Vertex{v4, vf{0, -1}, fill, outline},
+		Vertex{v2, vf{0, -1}, fill, outline},
 	}
 	t3 := Triangle{
-		Vertex{v3, v2f{0, 1}, fill, outline},
-		Vertex{v4, v2f{0, -1}, fill, outline},
-		Vertex{v5, v2f{0, 1}, fill, outline},
+		Vertex{v3, vf{0, 1}, fill, outline},
+		Vertex{v4, vf{0, -1}, fill, outline},
+		Vertex{v5, vf{0, 1}, fill, outline},
 	}
 	t4 := Triangle{
-		Vertex{v6, v2f{-1, -1}, fill, outline},
-		Vertex{v4, v2f{0, -1}, fill, outline},
-		Vertex{v5, v2f{0, 1}, fill, outline},
+		Vertex{v6, vf{-1, -1}, fill, outline},
+		Vertex{v4, vf{0, -1}, fill, outline},
+		Vertex{v5, vf{0, 1}, fill, outline},
 	}
 	t5 := Triangle{
-		Vertex{v6, v2f{-1, -1}, fill, outline},
-		Vertex{v7, v2f{-1, 1}, fill, outline},
-		Vertex{v5, v2f{0, 1}, fill, outline},
+		Vertex{v6, vf{-1, -1}, fill, outline},
+		Vertex{v7, vf{-1, 1}, fill, outline},
+		Vertex{v5, vf{0, 1}, fill, outline},
 	}
 
-	triangleStack = append(triangleStack, t0)
-	triangleStack = append(triangleStack, t1)
-	triangleStack = append(triangleStack, t2)
-	triangleStack = append(triangleStack, t3)
-	triangleStack = append(triangleStack, t4)
-	triangleStack = append(triangleStack, t5)
+	cpr.triangles = append(cpr.triangles, t0)
+	cpr.triangles = append(cpr.triangles, t1)
+	cpr.triangles = append(cpr.triangles, t2)
+	cpr.triangles = append(cpr.triangles, t3)
+	cpr.triangles = append(cpr.triangles, t4)
+	cpr.triangles = append(cpr.triangles, t5)
 }
 
-func DrawPolygon(count int, verts []cp.Vector, radius float64, outline, fill FColor) {
+func (cpr *CPRenderer) DrawPolygon(count int, verts []cp.Vector, radius float64, outline, fill FColor) {
 	type ExtrudeVerts struct {
 		offset, n cp.Vector
 	}
@@ -251,14 +241,14 @@ func DrawPolygon(count int, verts []cp.Vector, radius float64, outline, fill FCo
 
 	inset := -math.Max(0, 1.0/DrawPointLineScale-radius)
 	for i := 0; i < count-2; i++ {
-		v0 := V2f(verts[0].Add(extrude[0].offset.Mult(inset)))
-		v1 := V2f(verts[i+1].Add(extrude[i+1].offset.Mult(inset)))
-		v2 := V2f(verts[i+2].Add(extrude[i+2].offset.Mult(inset)))
+		v0 := v2f(verts[0].Add(extrude[0].offset.Mult(inset)))
+		v1 := v2f(verts[i+1].Add(extrude[i+1].offset.Mult(inset)))
+		v2 := v2f(verts[i+2].Add(extrude[i+2].offset.Mult(inset)))
 
-		triangleStack = append(triangleStack, Triangle{
-			Vertex{v0, v2f{}, fill, fill},
-			Vertex{v1, v2f{}, fill, fill},
-			Vertex{v2, v2f{}, fill, fill},
+		cpr.triangles = append(cpr.triangles, Triangle{
+			Vertex{v0, vf{}, fill, fill},
+			Vertex{v1, vf{}, fill, fill},
+			Vertex{v2, vf{}, fill, fill},
 		})
 	}
 
@@ -277,34 +267,34 @@ func DrawPolygon(count int, verts []cp.Vector, radius float64, outline, fill FCo
 		innerA := vA.Add(offsetA.Mult(inset))
 		innerB := vB.Add(offsetB.Mult(inset))
 
-		inner0 := V2f(innerA)
-		inner1 := V2f(innerB)
-		outer0 := V2f(innerA.Add(nB.Mult(outset)))
-		outer1 := V2f(innerB.Add(nB.Mult(outset)))
-		outer2 := V2f(innerA.Add(offsetA.Mult(outset)))
-		outer3 := V2f(innerA.Add(nA.Mult(outset)))
+		inner0 := v2f(innerA)
+		inner1 := v2f(innerB)
+		outer0 := v2f(innerA.Add(nB.Mult(outset)))
+		outer1 := v2f(innerB.Add(nB.Mult(outset)))
+		outer2 := v2f(innerA.Add(offsetA.Mult(outset)))
+		outer3 := v2f(innerA.Add(nA.Mult(outset)))
 
-		n0 := V2f(nA)
-		n1 := V2f(nB)
-		offset0 := V2f(offsetA)
+		n0 := v2f(nA)
+		n1 := v2f(nB)
+		offset0 := v2f(offsetA)
 
-		triangleStack = append(triangleStack, Triangle{
-			Vertex{inner0, v2f{}, fill, outline},
-			Vertex{inner1, v2f{}, fill, outline},
+		cpr.triangles = append(cpr.triangles, Triangle{
+			Vertex{inner0, vf{}, fill, outline},
+			Vertex{inner1, vf{}, fill, outline},
 			Vertex{outer1, n1, fill, outline},
 		})
-		triangleStack = append(triangleStack, Triangle{
-			Vertex{inner0, v2f{}, fill, outline},
+		cpr.triangles = append(cpr.triangles, Triangle{
+			Vertex{inner0, vf{}, fill, outline},
 			Vertex{outer0, n1, fill, outline},
 			Vertex{outer1, n1, fill, outline},
 		})
-		triangleStack = append(triangleStack, Triangle{
-			Vertex{inner0, v2f{}, fill, outline},
+		cpr.triangles = append(cpr.triangles, Triangle{
+			Vertex{inner0, vf{}, fill, outline},
 			Vertex{outer0, n1, fill, outline},
 			Vertex{outer2, offset0, fill, outline},
 		})
-		triangleStack = append(triangleStack, Triangle{
-			Vertex{inner0, v2f{}, fill, outline},
+		cpr.triangles = append(cpr.triangles, Triangle{
+			Vertex{inner0, vf{}, fill, outline},
 			Vertex{outer2, offset0, fill, outline},
 			Vertex{outer3, n0, fill, outline},
 		})
@@ -314,39 +304,39 @@ func DrawPolygon(count int, verts []cp.Vector, radius float64, outline, fill FCo
 	}
 }
 
-func DrawDot(size float64, pos cp.Vector, fill FColor) {
+func (cpr *CPRenderer) DrawDot(size float64, pos cp.Vector, fill FColor) {
 	r := size * 0.5 / DrawPointLineScale
-	a := Vertex{v2f{float32(pos.X - r), float32(pos.Y - r)}, v2f{-1, -1}, fill, fill}
-	b := Vertex{v2f{float32(pos.X - r), float32(pos.Y + r)}, v2f{-1, 1}, fill, fill}
-	c := Vertex{v2f{float32(pos.X + r), float32(pos.Y + r)}, v2f{1, 1}, fill, fill}
-	d := Vertex{v2f{float32(pos.X + r), float32(pos.Y - r)}, v2f{1, -1}, fill, fill}
+	a := Vertex{vf{float32(pos.X - r), float32(pos.Y - r)}, vf{-1, -1}, fill, fill}
+	b := Vertex{vf{float32(pos.X - r), float32(pos.Y + r)}, vf{-1, 1}, fill, fill}
+	c := Vertex{vf{float32(pos.X + r), float32(pos.Y + r)}, vf{1, 1}, fill, fill}
+	d := Vertex{vf{float32(pos.X + r), float32(pos.Y - r)}, vf{1, -1}, fill, fill}
 
-	triangleStack = append(triangleStack, Triangle{a, b, c})
-	triangleStack = append(triangleStack, Triangle{a, c, d})
+	cpr.triangles = append(cpr.triangles, Triangle{a, b, c})
+	cpr.triangles = append(cpr.triangles, Triangle{a, c, d})
 }
 
-func DrawBB(bb cp.BB, outline FColor) {
+func (cpr *CPRenderer) DrawBB(bb cp.BB, outline FColor) {
 	verts := []cp.Vector{
 		{bb.R, bb.B},
 		{bb.R, bb.T},
 		{bb.L, bb.T},
 		{bb.L, bb.B},
 	}
-	DrawPolygon(4, verts, 0, outline, FColor{})
+	cpr.DrawPolygon(4, verts, 0, outline, FColor{})
 }
 
-func (r *CPRenderer) FlushRenderer() {
-	gl.BindBuffer(gl.ARRAY_BUFFER, r.vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(triangleStack)*(48*3), gl.Ptr(triangleStack), gl.STREAM_DRAW)
+func (cpr *CPRenderer) FlushRenderer() {
+	gl.BindBuffer(gl.ARRAY_BUFFER, cpr.vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(cpr.triangles)*(48*3), gl.Ptr(cpr.triangles), gl.STREAM_DRAW)
 
-	gl.UseProgram(r.shader.ID)
-	gl.Uniform1f(gl.GetUniformLocation(r.shader.ID, gl.Str("u_outline_coef\x00")), DrawPointLineScale)
+	gl.UseProgram(cpr.shader.ID)
+	gl.Uniform1f(gl.GetUniformLocation(cpr.shader.ID, gl.Str("u_outline_coef\x00")), DrawPointLineScale)
 
-	gl.BindVertexArray(r.vao)
-	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(triangleStack)*3))
+	gl.BindVertexArray(cpr.vao)
+	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cpr.triangles)*3))
 	CheckGLErrors()
 }
 
-func ClearRenderer() {
-	triangleStack = triangleStack[:0]
+func (cpr *CPRenderer) ClearRenderer() {
+	cpr.triangles = cpr.triangles[:0]
 }

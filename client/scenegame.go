@@ -76,7 +76,7 @@ func (g *GameScene) Render() {
 
 	// useful for debugging space issues
 	SpaceRenderer.SetProjection(projection)
-	SpaceRenderer.DrawSpace(g.game.Space)
+	SpaceRenderer.ClearRenderer()
 
 	for _, tank := range g.game.Tanks {
 		DrawTank(tank)
@@ -86,16 +86,20 @@ func (g *GameScene) Render() {
 		DrawBullet(g.game, bullet)
 	}
 
-	//for _, box := range g.game.Boxes {
-	//	DrawBox(g.game, box)
-	//}
-
-	if g.game.State == tanklets.GameStateWaiting {
-		Text.Print("Connecting", 50, 100, 1)
+	for _, box := range g.game.Boxes {
+		box.Body.EachShape(func(shape *cp.Shape) {
+			SpaceRenderer.DrawShape(shape)
+		})
 	}
 
+	for _, wall := range g.game.Walls {
+		SpaceRenderer.DrawShape(wall)
+	}
+
+	SpaceRenderer.FlushRenderer()
+
 	if g.game.State == tanklets.GameStateDead {
-		Text.Print("You died", 50, 50, 1)
+		Text.Print("You died", 50, 600, 1)
 	}
 
 	nk.NkPlatformNewFrame()

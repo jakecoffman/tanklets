@@ -121,9 +121,12 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 			return false
 		}
 
-		tank.Destroyed = true
-		fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
-		Players.SendAll(Damage{tank.ID, bullet.PlayerID})
+		if !tank.Destroyed {
+			tank.Destroyed = true
+			fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
+			Players.SendAll(Damage{tank.ID, bullet.PlayerID})
+		}
+
 		bullet.Destroy(false)
 
 		bullet.Bounce = 100

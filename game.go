@@ -48,6 +48,8 @@ type Game struct {
 	Tanks   map[PlayerID]*Tank
 	Boxes   map[BoxID]*Box
 
+	Walls []*cp.Shape
+
 	State int
 
 	playerIdCursor, color, bullet *gutils.Cursor
@@ -82,6 +84,7 @@ func NewGame(width, height float64) *Game {
 		seg.SetElasticity(1)
 		seg.SetFriction(0)
 		seg.SetFilter(PlayerFilter)
+		game.Walls = append(game.Walls, seg)
 	}
 
 	if IsServer {

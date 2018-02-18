@@ -7,6 +7,7 @@ import (
 	"github.com/jakecoffman/tanklets"
 	"time"
 	"fmt"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 func Recv() {
@@ -24,20 +25,20 @@ func Recv() {
 
 		// handle certain things right now:
 		switch data[0] {
-		case tanklets.PacketPing:
-			ping := &tanklets.Ping{}
+		case pkt.PacketPing:
+			ping := &pkt.Ping{}
 			_, err := ping.Serialize(data)
 			if err != nil {
 				log.Println(err)
 				continue
 			}
-			tanklets.MyPing = time.Now().Sub(ping.T)
+			pkt.MyPing = time.Now().Sub(ping.T)
 			ping.T = time.Now()
 			tanklets.ClientSend(ping)
 			continue
 		}
 
-		if data[0] == tanklets.PacketJoin {
+		if data[0] == pkt.PacketJoin {
 			fmt.Println("CLIENT QUEUING UP JOIN")
 		}
 

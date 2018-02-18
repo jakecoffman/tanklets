@@ -1,4 +1,4 @@
-package tanklets
+package pkt
 
 import (
 	"github.com/jakecoffman/binser"

@@ -1,4 +1,4 @@
-package tanklets
+package pkt
 
 import (
 	"github.com/go-gl/mathgl/mgl32"

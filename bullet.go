@@ -3,18 +3,16 @@ package tanklets
 import (
 	"log"
 	"math"
-
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
 	"fmt"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 const (
 	BulletSpeed = 150
 	BulletTTL   = 10
 )
-
-type BulletID uint64
 
 type Bullet struct {
 	ID       BulletID
@@ -124,7 +122,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 		if !tank.Destroyed {
 			tank.Destroyed = true
 			fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
-			Players.SendAll(Damage{tank.ID, bullet.PlayerID})
+			Players.SendAll(pkt.Damage{tank.ID, bullet.PlayerID})
 		}
 
 		bullet.Destroy(false)
@@ -166,8 +164,8 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 	return false
 }
 
-func (bullet *Bullet) Location() *Shoot {
-	return &Shoot{
+func (bullet *Bullet) Location() *pkt.Shoot {
+	return &pkt.Shoot{
 		BulletID:        bullet.ID,
 		PlayerID:        bullet.PlayerID,
 		Bounce:          int16(bullet.Bounce),

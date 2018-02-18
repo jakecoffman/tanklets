@@ -12,6 +12,7 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"math"
 	"github.com/jakecoffman/tanklets/gutils"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 type GameScene struct {
@@ -28,7 +29,7 @@ func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
 	w.SetMouseButtonCallback(MouseButtonCallback)
 
 	fmt.Println("Sending JOIN command")
-	tanklets.ClientSend(tanklets.Join{})
+	tanklets.ClientSend(pkt.Join{})
 	return &GameScene{
 		window: w,
 		ctx: ctx,
@@ -110,7 +111,7 @@ func (g *GameScene) Render() {
 	if update > 0 {
 		nk.NkLayoutRowDynamic(g.ctx, 20, 1)
 		{
-			nk.NkLabel(g.ctx, fmt.Sprint("ping: ", tanklets.MyPing), nk.TextLeft)
+			nk.NkLabel(g.ctx, fmt.Sprint("ping: ", pkt.MyPing), nk.TextLeft)
 		}
 		nk.NkLayoutRowDynamic(g.ctx, 20, 1)
 		{
@@ -132,9 +133,9 @@ func (g *GameScene) Render() {
 					if nk.NkButtonLabel(g.ctx, "Ready") > 0 {
 						g.isReady = true
 						LeftClick = false
-						tanklets.ClientSend(tanklets.Ready{})
-						tanklets.ClientSend(tanklets.Ready{})
-						tanklets.ClientSend(tanklets.Ready{})
+						tanklets.ClientSend(pkt.Ready{})
+						tanklets.ClientSend(pkt.Ready{})
+						tanklets.ClientSend(pkt.Ready{})
 					}
 				}
 			}
@@ -146,11 +147,11 @@ func (g *GameScene) Render() {
 }
 
 func (g *GameScene) Destroy() {
-	tanklets.ClientSend(tanklets.Disconnect{})
-	tanklets.ClientSend(tanklets.Disconnect{})
-	tanklets.ClientSend(tanklets.Disconnect{})
-	tanklets.ClientSend(tanklets.Disconnect{})
-	tanklets.ClientSend(tanklets.Disconnect{})
+	tanklets.ClientSend(pkt.Disconnect{})
+	tanklets.ClientSend(pkt.Disconnect{})
+	tanklets.ClientSend(pkt.Disconnect{})
+	tanklets.ClientSend(pkt.Disconnect{})
+	tanklets.ClientSend(pkt.Disconnect{})
 	tanklets.NetClose()
 }
 
@@ -201,7 +202,7 @@ func ProcessInput(game *tanklets.Game) {
 	}
 
 	if LeftClick {
-		tanklets.ClientSend(tanklets.Shoot{})
+		tanklets.ClientSend(pkt.Shoot{})
 		Player.LastShot = time.Now()
 	}
 
@@ -214,6 +215,6 @@ func ProcessInput(game *tanklets.Game) {
 	}
 
 	// send all of this input to the server
-	myTank.NextMove = tanklets.Move{Turn: turn, Throttle: throttle, TurretAngle: math.Atan2(turret.Y, turret.X)}
+	myTank.NextMove = pkt.Move{Turn: turn, Throttle: throttle, TurretAngle: math.Atan2(turret.Y, turret.X)}
 	tanklets.ClientSend(myTank.NextMove)
 }

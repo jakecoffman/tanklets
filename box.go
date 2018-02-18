@@ -1,6 +1,9 @@
 package tanklets
 
-import "github.com/jakecoffman/cp"
+import (
+	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/tanklets/pkt"
+)
 
 const boxSize = 25
 
@@ -28,11 +31,11 @@ func (g *Game) NewBox(id BoxID) *Box {
 	return g.Boxes[id]
 }
 
-func (b *Box) Location() BoxLocation {
-	return BoxLocation{
-		ID:              b.ID,
-		X:               float32(b.Body.Position().X),
-		Y:               float32(b.Body.Position().Y),
-		Angle:           float32(b.Body.Angle()),
+func (b *Box) Location() pkt.BoxLocation {
+	return pkt.BoxLocation{
+		ID:    b.ID,
+		X:     float32(b.Body.Position().X),
+		Y:     float32(b.Body.Position().Y),
+		Angle: float32(b.Body.Angle()),
 	}
 }

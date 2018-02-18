@@ -6,6 +6,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
 	"math"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 // default tank attributes (power-ups could change them!)
@@ -39,9 +40,9 @@ type Tank struct {
 
 	Destroyed bool
 
-	NextMove, LastMove Move
-	Ping time.Duration // tank ping in ns
-	Ready bool
+	NextMove, LastMove pkt.Move
+	Ping               time.Duration // tank ping in ns
+	Ready              bool
 }
 
 type Turret struct {
@@ -114,8 +115,8 @@ func (tank *Tank) FixedUpdate(dt float64) {
 }
 
 // gather important data to transmit
-func (tank *Tank) Location() *Location {
-	return &Location{
+func (tank *Tank) Location() *pkt.Location {
+	return &pkt.Location{
 		ID:              tank.ID,
 		X:               float32(tank.Body.Position().X),
 		Y:               float32(tank.Body.Position().Y),

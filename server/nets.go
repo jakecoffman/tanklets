@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync/atomic"
 	"github.com/jakecoffman/tanklets"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 func Recv() {
@@ -22,8 +23,8 @@ func Recv() {
 
 		// handle certain things right now:
 		switch data[0] {
-		case tanklets.PacketPing:
-			ping := &tanklets.Ping{}
+		case pkt.PacketPing:
+			ping := &pkt.Ping{}
 			_, err := ping.Serialize(data)
 			if err != nil {
 				log.Println(err)

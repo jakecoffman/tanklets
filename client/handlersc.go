@@ -6,25 +6,26 @@ import (
 	"log"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 type packetHandler func(packet tanklets.Packet, game *tanklets.Game)
 
-var handlers [tanklets.PacketMax]packetHandler
+var handlers [pkt.PacketMax]packetHandler
 
 func init() {
-	for i := 0; i < tanklets.PacketMax; i++ {
+	for i := 0; i < pkt.PacketMax; i++ {
 		handlers[i] = noop
 	}
 
-	handlers[tanklets.PacketInit] = initial
-	handlers[tanklets.PacketJoin] = join
-	handlers[tanklets.PacketLocation] = location
-	handlers[tanklets.PacketState] = state
-	handlers[tanklets.PacketDisconnect] = disconnect
-	handlers[tanklets.PacketBoxLocation] = boxlocation
-	handlers[tanklets.PacketDamage] = damage
-	handlers[tanklets.PacketShoot] = shoot
+	handlers[pkt.PacketInit] = initial
+	handlers[pkt.PacketJoin] = join
+	handlers[pkt.PacketLocation] = location
+	handlers[pkt.PacketState] = state
+	handlers[pkt.PacketDisconnect] = disconnect
+	handlers[pkt.PacketBoxLocation] = boxlocation
+	handlers[pkt.PacketDamage] = damage
+	handlers[pkt.PacketShoot] = shoot
 }
 
 func ProcessNetwork(packet tanklets.Packet, game *tanklets.Game) {
@@ -36,27 +37,27 @@ func noop(packet tanklets.Packet, _ *tanklets.Game) {
 }
 
 func initial(packet tanklets.Packet, _ *tanklets.Game) {
-	initial := tanklets.Initial{}
+	initial := pkt.Initial{}
 	if _, err := initial.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return
 	}
 
 	fmt.Println("I am connected!")
-	tanklets.Me = initial.ID
+	tanklets.Me = tanklets.PlayerID(initial.ID)
 	tanklets.ClientIsConnected = true
 	tanklets.ClientIsConnecting = false
 }
 
 func join(packet tanklets.Packet, game *tanklets.Game) {
-	j := tanklets.Join{}
+	j := pkt.Join{}
 	if _, err := j.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return
 	}
 
 	fmt.Println("Player joined")
-	tank := game.NewTank(j.ID, mgl32.Vec3(j.Color))
+	tank := game.NewTank(tanklets.PlayerID(j.ID), mgl32.Vec3(j.Color))
 	if j.You > 0 {
 		fmt.Println("Oh, it's me!")
 		tanklets.Me = tank.ID
@@ -66,13 +67,13 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 }
 
 func location(packet tanklets.Packet, game *tanklets.Game) {
-	l := tanklets.Location{}
+	l := pkt.Location{}
 	if _, err := l.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return
 	}
 
-	player := game.Tanks[l.ID]
+	player := game.Tanks[tanklets.PlayerID(l.ID)]
 	if player == nil {
 		log.Println("Client", tanklets.Me, "-- Player with ID", l.ID, "not found")
 		return
@@ -102,15 +103,15 @@ func location(packet tanklets.Packet, game *tanklets.Game) {
 }
 
 func boxlocation(packet tanklets.Packet, game *tanklets.Game) {
-	l := tanklets.BoxLocation{}
+	l := pkt.BoxLocation{}
 	if _, err := l.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return
 	}
 
-	box := game.Boxes[l.ID]
+	box := game.Boxes[tanklets.BoxID(l.ID)]
 	if box == nil {
-		box = game.NewBox(l.ID)
+		box = game.NewBox(tanklets.BoxID(l.ID))
 	}
 	pos := box.Position()
 	newPos := cp.Vector{float64(l.X), float64(l.Y)}
@@ -128,13 +129,13 @@ func boxlocation(packet tanklets.Packet, game *tanklets.Game) {
 }
 
 func damage(packet tanklets.Packet, game *tanklets.Game) {
-	d := tanklets.Damage{}
+	d := pkt.Damage{}
 	if _, err := d.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return
 	}
 
-	tank := game.Tanks[d.ID]
+	tank := game.Tanks[tanklets.PlayerID(d.ID)]
 	if tank == nil {
 		log.Println("Tank", d.ID, "not found")
 		return
@@ -147,7 +148,7 @@ func damage(packet tanklets.Packet, game *tanklets.Game) {
 }
 
 func disconnect(packet tanklets.Packet, game *tanklets.Game) {
-	d := tanklets.Disconnect{}
+	d := pkt.Disconnect{}
 	if _, err := d.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return
@@ -157,17 +158,17 @@ func disconnect(packet tanklets.Packet, game *tanklets.Game) {
 }
 
 func shoot(packet tanklets.Packet, game *tanklets.Game) {
-	s := tanklets.Shoot{}
+	s := pkt.Shoot{}
 	if _, err := s.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return
 	}
 
-	firedBy := game.Tanks[s.PlayerID]
-	bullet := game.Bullets[s.BulletID]
+	firedBy := game.Tanks[tanklets.PlayerID(s.PlayerID)]
+	bullet := game.Bullets[tanklets.BulletID(s.BulletID)]
 	if bullet == nil {
-		bullet = game.NewBullet(firedBy, s.BulletID)
-		game.Bullets[s.BulletID] = bullet
+		bullet = game.NewBullet(firedBy, tanklets.BulletID(s.BulletID))
+		game.Bullets[tanklets.BulletID(s.BulletID)] = bullet
 	}
 
 	bullet.Bounce = int(s.Bounce)
@@ -183,7 +184,7 @@ func shoot(packet tanklets.Packet, game *tanklets.Game) {
 }
 
 func state(packet tanklets.Packet, game *tanklets.Game) {
-	s := tanklets.State{}
+	s := pkt.State{}
 	if _, err := s.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return

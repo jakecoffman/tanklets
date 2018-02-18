@@ -5,9 +5,12 @@ import (
 	"github.com/engoengine/math"
 	"github.com/jakecoffman/tanklets/gutils"
 	"fmt"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
-type PlayerID uint16
+type PlayerID = pkt.PlayerID
+type BulletID = pkt.BulletID
+type BoxID = pkt.BoxID
 
 var (
 	// TODO move this into client code... I think I can refactor the handlers to be in their respective packages
@@ -38,8 +41,6 @@ var PlayerFilter = cp.ShapeFilter{
 var NotPlayerFilter = cp.ShapeFilter{
 	cp.NO_GROUP, ^PlayerMaskBit, ^PlayerMaskBit,
 }
-
-type BoxID uint16
 
 type Game struct {
 	Space *cp.Space
@@ -130,7 +131,7 @@ func (g *Game) Update(dt float64) {
 		}
 		if allReady {
 			g.State = GameStatePlaying
-			Players.SendAll(State{State: GameStatePlaying})
+			Players.SendAll(pkt.State{State: GameStatePlaying})
 		}
 	}
 }

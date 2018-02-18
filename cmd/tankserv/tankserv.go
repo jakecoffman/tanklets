@@ -8,6 +8,7 @@ import (
 	"github.com/jakecoffman/tanklets"
 	"math/rand"
 	"github.com/jakecoffman/tanklets/server"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 const (
@@ -36,7 +37,7 @@ func main() {
 	pingTick := time.Tick(1*time.Second)
 	go func() {
 		for range pingTick {
-			ping := tanklets.Ping{T: time.Now()}
+			ping := pkt.Ping{T: time.Now()}
 			tanklets.Players.SendAll(ping)
 		}
 	}()
@@ -93,4 +94,4 @@ func main() {
 	}
 }
 
-var BoxLocations = map[tanklets.BoxID]tanklets.BoxLocation{}
+var BoxLocations = map[tanklets.BoxID]pkt.BoxLocation{}

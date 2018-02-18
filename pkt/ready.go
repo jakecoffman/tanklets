@@ -1,16 +1,10 @@
-package tanklets
+package pkt
 
 import (
-	"net"
-
 	"github.com/jakecoffman/binser"
 )
 
 type Ready struct {}
-
-func (j *Ready) Handle(addr *net.UDPAddr, game *Game) {
-
-}
 
 func (j Ready) MarshalBinary() ([]byte, error) {
 	return j.Serialize(nil)

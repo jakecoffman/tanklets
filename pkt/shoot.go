@@ -1,4 +1,4 @@
-package tanklets
+package pkt
 
 import (
 	"github.com/jakecoffman/binser"
@@ -27,11 +27,6 @@ func (s *Shoot) Serialize(b []byte) ([]byte, error) {
 	stream := binser.NewStream(b)
 	var t uint8 = PacketShoot
 	stream.Uint8(&t)
-	if !IsServer && !stream.IsReading() || IsServer && stream.IsReading() {
-		// the player sends this empty message to shoot
-		return stream.Bytes()
-	}
-	// the server sends all players the rest of the data
 	stream.Uint16((*uint16)(&s.PlayerID))
 	stream.Uint64((*uint64)(&s.BulletID))
 	stream.Int16(&s.Bounce)

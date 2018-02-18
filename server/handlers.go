@@ -9,24 +9,25 @@ import (
 	"golang.org/x/image/math/f32"
 	"log"
 	"time"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 type packetHandler func(packet tanklets.Packet, game *tanklets.Game)
 
-var handlers [tanklets.PacketMax]packetHandler
+var handlers [pkt.PacketMax]packetHandler
 
 func init() {
-	for i := 0; i < tanklets.PacketMax; i++ {
+	for i := 0; i < pkt.PacketMax; i++ {
 		handlers[i] = noop
 	}
 
-	handlers[tanklets.PacketInit] = initial
-	handlers[tanklets.PacketJoin] = join
-	handlers[tanklets.PacketDisconnect] = disconnect
-	handlers[tanklets.PacketMove] = move
-	handlers[tanklets.PacketPing] = ping
-	handlers[tanklets.PacketReady] = ready
-	handlers[tanklets.PacketShoot] = shoot
+	handlers[pkt.PacketInit] = initial
+	handlers[pkt.PacketJoin] = join
+	handlers[pkt.PacketDisconnect] = disconnect
+	handlers[pkt.PacketMove] = move
+	handlers[pkt.PacketPing] = ping
+	handlers[pkt.PacketReady] = ready
+	handlers[pkt.PacketShoot] = shoot
 }
 
 func ProcessNetwork(packet tanklets.Packet, game *tanklets.Game) {
@@ -39,7 +40,7 @@ func noop(packet tanklets.Packet, _ *tanklets.Game) {
 
 func initial(packet tanklets.Packet, game *tanklets.Game) {
 	addr := packet.Addr
-	initial := tanklets.Initial{}
+	initial := pkt.Initial{}
 	_, err := initial.Serialize(packet.Bytes)
 	if err != nil {
 		log.Println(err)
@@ -64,14 +65,14 @@ func initial(packet tanklets.Packet, game *tanklets.Game) {
 func join(packet tanklets.Packet, game *tanklets.Game) {
 	fmt.Println("SERVER Handling join")
 	addr := packet.Addr
-	tank := game.NewTank(tanklets.Lookup[addr.String()], tanklets.GetColor(game.CursorColor.Next()))
+	tank := game.NewTank(tanklets.Lookup[addr.String()], pkt.GetColor(game.CursorColor.Next()))
 	tank.SetPosition(cp.Vector{10 + float64(rand.Intn(790)), 10 + float64(rand.Intn(580))})
 	// tell this player their ID
-	tanklets.ServerSend(tanklets.Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
+	tanklets.ServerSend(pkt.Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
 	loc := tank.Location()
 	// tell this player where they are
 	tanklets.ServerSend(loc, addr)
-	join := tanklets.Join{tank.ID, 0, f32.Vec3(tank.Color)}
+	join := pkt.Join{tank.ID, 0, f32.Vec3(tank.Color)}
 	tanklets.Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
 		if id == tank.ID {
 			return
@@ -81,7 +82,7 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 		tanklets.ServerSend(loc, p)
 		// tell this player where all the existing players are
 		thisTank := game.Tanks[id]
-		tanklets.ServerSend(tanklets.Join{id, 0, f32.Vec3(thisTank.Color)}, addr)
+		tanklets.ServerSend(pkt.Join{id, 0, f32.Vec3(thisTank.Color)}, addr)
 		tanklets.ServerSend(thisTank.Location(), addr)
 	})
 	// Tell this player about the level
@@ -109,10 +110,10 @@ func disconnect(packet tanklets.Packet, game *tanklets.Game) {
 	game.Tanks[playerID].Destroyed = true
 
 	// tell others they left & destroyed
-	tanklets.Players.SendAll(tanklets.Disconnect{ID: playerID}, tanklets.Damage{ID: playerID, Killer: playerID})
+	tanklets.Players.SendAll(pkt.Disconnect{ID: uint16(playerID)}, pkt.Damage{ID: playerID, Killer: playerID})
 }
 func move(packet tanklets.Packet, game *tanklets.Game) {
-	m := tanklets.Move{}
+	m := pkt.Move{}
 	if _, err := m.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return

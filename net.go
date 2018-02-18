@@ -8,24 +8,10 @@ import (
 	"time"
 	"fmt"
 	"github.com/jakecoffman/tanklets/gutils"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 var SimulatedNetworkLatencyMS = 100
-
-const (
-	PacketInit = iota
-	PacketJoin
-	PacketReady
-	PacketState
-	PacketDisconnect
-	PacketMove
-	PacketShoot
-	PacketLocation
-	PacketBoxLocation
-	PacketDamage
-	PacketPing
-	PacketMax
-)
 
 var ServerAddr *net.UDPAddr
 var UdpConn *net.UDPConn
@@ -97,7 +83,7 @@ func NetInit(addr string) error {
 			return err
 		}
 
-		defer ClientSend(Initial{})
+		defer ClientSend(pkt.Initial{})
 	}
 
 	UdpConn.SetReadBuffer(1048576)

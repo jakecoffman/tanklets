@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	bulletSpeed = 150
-	bulletTTL   = 10
+	BulletSpeed = 150
+	BulletTTL   = 10
 )
 
 type BulletID uint64
@@ -48,7 +48,7 @@ func (g *Game) NewBullet(firedBy *Tank, id BulletID) *Bullet {
 
 func (bullet *Bullet) Update(dt float64) {
 	bullet.timeAlive += dt
-	if bullet.timeAlive > bulletTTL {
+	if bullet.timeAlive > BulletTTL {
 		// don't call Destroy because it fires after the next step
 		delete(bullet.game.Bullets, bullet.ID)
 		bullet.Shape.UserData = nil

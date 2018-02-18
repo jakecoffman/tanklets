@@ -54,8 +54,8 @@ func (g *GameScene) Update(dt float64) {
 network:
 	for {
 		select {
-		case incoming := <-tanklets.Incomings:
-			incoming.Handler.Handle(incoming.Addr, g.game)
+		case incoming := <-tanklets.IncomingPackets:
+			ProcessNetwork(incoming, g.game)
 		default:
 			// no data to process this frame
 			break network

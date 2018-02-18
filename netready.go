@@ -9,8 +9,7 @@ import (
 type Ready struct {}
 
 func (j *Ready) Handle(addr *net.UDPAddr, game *Game) {
-	tank := game.Tanks[Lookup[addr.String()]]
-	tank.Ready = true
+
 }
 
 func (j Ready) MarshalBinary() ([]byte, error) {
@@ -24,7 +23,7 @@ func (j *Ready) UnmarshalBinary(b []byte) error {
 
 func (j *Ready) Serialize(b []byte) ([]byte, error) {
 	stream := binser.NewStream(b)
-	var m uint8 = READY
+	var m uint8 = PacketReady
 	stream.Uint8(&m)
 	return stream.Bytes()
 }

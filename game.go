@@ -52,7 +52,7 @@ type Game struct {
 
 	State int
 
-	playerIdCursor, color, bullet *gutils.Cursor
+	CursorPlayerId, CursorColor, CursorBullet *gutils.Cursor
 }
 
 func NewGame(width, height float64) *Game {
@@ -66,9 +66,9 @@ func NewGame(width, height float64) *Game {
 		Boxes:   map[BoxID]*Box{},
 
 		// various cursors
-		playerIdCursor: gutils.NewCursor(1, 100),
-		color:          gutils.NewCursor(0, 14),
-		bullet:         gutils.NewCursor(1, math.MaxInt64),
+		CursorPlayerId: gutils.NewCursor(1, 100),
+		CursorColor:    gutils.NewCursor(0, 14),
+		CursorBullet:   gutils.NewCursor(1, math.MaxInt64),
 	}
 
 	sides := []cp.Vector{
@@ -130,7 +130,7 @@ func (g *Game) Update(dt float64) {
 		}
 		if allReady {
 			g.State = GameStatePlaying
-			Players.SendAll(State{state: GameStatePlaying})
+			Players.SendAll(State{State: GameStatePlaying})
 		}
 	}
 }

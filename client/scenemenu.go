@@ -37,7 +37,22 @@ func NewMainMenuScene(w *glfw.Window, ctx *nk.Context) Scene {
 const joinTextSize = 256
 
 func (m *MainMenuScene) Update(dt float64) {
+	if tanklets.ClientIsConnected {
+		return
+	}
 
+	// handle packets until we're connected
+network:
+	for {
+		select {
+		case incoming := <-tanklets.IncomingPackets:
+			ProcessNetwork(incoming, nil)
+			break network
+		default:
+			// no data to process this frame
+			break network
+		}
+	}
 }
 
 func (m *MainMenuScene) Render() {
@@ -79,6 +94,7 @@ func (m *MainMenuScene) Render() {
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
 					tanklets.NetInit("127.0.0.1:1234")
+					go Recv()
 				}
 			}
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
@@ -89,6 +105,7 @@ func (m *MainMenuScene) Render() {
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
 					tanklets.NetInit(string(m.joinText))
+					go Recv()
 				}
 			}
 		}

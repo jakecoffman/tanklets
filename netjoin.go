@@ -1,12 +1,7 @@
 package tanklets
 
 import (
-	"fmt"
-	"math/rand"
-	"net"
-
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/jakecoffman/cp"
 	"github.com/jakecoffman/binser"
 	"golang.org/x/image/math/f32"
 )
@@ -36,49 +31,6 @@ func GetColor(i int) mgl32.Vec3 {
 	}[i]
 }
 
-func (j *Join) Handle(addr *net.UDPAddr, game *Game) {
-	var tank *Tank
-
-	if IsServer {
-		fmt.Println("Handling join")
-		tank = game.NewTank(Lookup[addr.String()], GetColor(game.color.Next()))
-		tank.SetPosition(cp.Vector{10 + float64(rand.Intn(790)), 10 + float64(rand.Intn(580))})
-		// tell this player their ID
-		ServerSend(Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
-		loc := tank.Location()
-		// tell this player where they are
-		ServerSend(loc, addr)
-		join := Join{tank.ID, 0, f32.Vec3(tank.Color)}
-		Players.Each(func (id PlayerID, p *net.UDPAddr) {
-			if id == tank.ID {
-				return
-			}
-			// tell all players about this player
-			ServerSend(join, p)
-			ServerSend(loc, p)
-			// tell this player where all the existing players are
-			thisTank := game.Tanks[id]
-			ServerSend(Join{id, 0, f32.Vec3(thisTank.Color)}, addr)
-			ServerSend(thisTank.Location(), addr)
-		})
-		// Tell this player about the level
-		for _, box := range game.Boxes {
-			ServerSend(box.Location(), addr)
-		}
-		Lookup[addr.String()] = tank.ID
-		Players.Put(tank.ID, addr)
-	} else {
-		fmt.Println("Player joined")
-		tank = game.NewTank(j.ID, mgl32.Vec3(j.Color))
-		if j.You > 0 {
-			fmt.Println("Oh, it's me!")
-			Me = tank.ID
-			//Player = player
-		}
-	}
-	game.Tanks[tank.ID] = tank
-}
-
 func (j Join) MarshalBinary() ([]byte, error) {
 	return j.Serialize(nil)
 }
@@ -90,7 +42,7 @@ func (j *Join) UnmarshalBinary(b []byte) error {
 
 func (j *Join) Serialize(b []byte) ([]byte, error) {
 	stream := binser.NewStream(b)
-	var m uint8 = JOIN
+	var m uint8 = PacketJoin
 	stream.Uint8(&m)
 	stream.Uint8(&j.You)
 	stream.Uint16((*uint16)(&j.ID))

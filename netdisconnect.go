@@ -1,33 +1,11 @@
 package tanklets
 
 import (
-	"fmt"
-	"net"
 	"github.com/jakecoffman/binser"
 )
 
 type Disconnect struct {
 	ID PlayerID
-}
-
-func (d Disconnect) Handle(addr *net.UDPAddr, game *Game) {
-	if IsServer {
-		playerID := Lookup[addr.String()]
-		player := Players.Get(playerID)
-		if player == nil {
-			// this is normal, we spam disconnect when leaving to ensure the server gets it
-			return
-		}
-
-		Players.Delete(playerID)
-		delete(Lookup, addr.String())
-		game.Tanks[playerID].Destroyed = true
-
-		// tell others they left & destroyed
-		Players.SendAll(Disconnect{ID: playerID}, Damage{ID: playerID, Killer: playerID})
-	} else {
-		fmt.Println("Client", Me, "-- Player", d.ID, "Has disonnceted")
-	}
 }
 
 func (d Disconnect) MarshalBinary() ([]byte, error) {
@@ -41,7 +19,7 @@ func (d *Disconnect) UnmarshalBinary(b []byte) error {
 
 func (d *Disconnect) Serialize(b []byte) ([]byte, error) {
 	stream := binser.NewStream(b)
-	var dc uint8 = DISCONNECT
+	var dc uint8 = PacketDisconnect
 	stream.Uint8(&dc)
 	stream.Uint16((*uint16)(&d.ID))
 	return stream.Bytes()

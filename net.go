@@ -1,7 +1,6 @@
 package tanklets
 
 import (
-	"bufio"
 	"encoding"
 	"log"
 	"net"
@@ -13,27 +12,27 @@ import (
 
 var SimulatedNetworkLatencyMS = 100
 
-// Message type IDs
 const (
-	INIT        = iota
-	JOIN
-	READY
-	STATE
-	DISCONNECT
-	MOVE
-	SHOOT
-	LOCATION
-	BOXLOCATION
-	DAMAGE
-	PING
+	PacketInit = iota
+	PacketJoin
+	PacketReady
+	PacketState
+	PacketDisconnect
+	PacketMove
+	PacketShoot
+	PacketLocation
+	PacketBoxLocation
+	PacketDamage
+	PacketPing
+	PacketMax
 )
 
 var ServerAddr *net.UDPAddr
-var udpConn *net.UDPConn
+var UdpConn *net.UDPConn
 var IsServer bool
 
-type Incoming struct {
-	Handler Handler
+type Packet struct {
+	Bytes []byte
 	Addr    *net.UDPAddr
 }
 
@@ -42,11 +41,11 @@ type Outgoing struct {
 	addr *net.UDPAddr
 }
 
-var Incomings = make(chan Incoming, 1000)
+var IncomingPackets = make(chan Packet, 1000)
 
 var tick = time.Tick(1 * time.Second)
-var incomingBytesPerSecond uint64
-var outgoingBytesPerSecond uint64
+var InBps uint64
+var OutBps uint64
 
 var NetworkIn, NetworkOut uint64
 
@@ -55,10 +54,10 @@ func init() {
 		for {
 			select {
 			case <-tick:
-				NetworkIn = atomic.LoadUint64(&incomingBytesPerSecond)
-				NetworkOut = atomic.LoadUint64(&outgoingBytesPerSecond)
-				atomic.StoreUint64(&incomingBytesPerSecond, 0)
-				atomic.StoreUint64(&outgoingBytesPerSecond, 0)
+				NetworkIn = atomic.LoadUint64(&InBps)
+				NetworkOut = atomic.LoadUint64(&OutBps)
+				atomic.StoreUint64(&InBps, 0)
+				atomic.StoreUint64(&OutBps, 0)
 
 				if IsServer {
 					fmt.Println("in :", gutils.Bytes(NetworkIn))
@@ -82,7 +81,7 @@ func NetInit(addr string) error {
 
 	if IsServer {
 		fmt.Println("Init server connection")
-		udpConn, err = net.ListenUDP("udp", ServerAddr)
+		UdpConn, err = net.ListenUDP("udp", ServerAddr)
 		if err != nil {
 			log.Fatal(err)
 			return err
@@ -91,98 +90,25 @@ func NetInit(addr string) error {
 		ClientIsConnected = false
 		ClientIsConnecting = true
 		fmt.Println("Init client connection")
-		udpConn, err = net.DialUDP("udp", nil, ServerAddr)
+		UdpConn, err = net.DialUDP("udp", nil, ServerAddr)
 		if err != nil {
 			ClientIsConnecting = false
 			log.Println(err)
 			return err
 		}
 
-		defer ClientSend(Init{})
+		defer ClientSend(Initial{})
 	}
 
-	udpConn.SetReadBuffer(1048576)
+	UdpConn.SetReadBuffer(1048576)
 
-	go Recv()
 	return nil
 }
 
 func NetClose() error {
 	fmt.Println("Net close")
 	ClientIsConnected = false
-	return udpConn.Close()
-}
-
-// Recv runs in a goroutine and un-marshals incoming data, queuing it up for ProcessIncoming to handle
-func Recv() {
-	data := make([]byte, 2048)
-	for {
-		var addr *net.UDPAddr
-		var err error
-		var n int
-		if IsServer {
-			n, addr, err = udpConn.ReadFromUDP(data)
-			if err != nil {
-				panic(err)
-				return
-			}
-		} else {
-			n, err = bufio.NewReader(udpConn).Read(data)
-			if err != nil {
-				ClientIsConnected = false
-				log.Println(err)
-				return
-			}
-		}
-		atomic.AddUint64(&incomingBytesPerSecond, uint64(n))
-
-		var handler Handler
-		switch data[0] {
-		case INIT:
-			if !IsServer {
-				init := &Init{}
-				init.Handle(addr, nil)
-				continue
-			} else {
-				handler = &Init{}
-			}
-		case PING:
-			handler = &Ping{}
-			_, err = handler.Serialize(data)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			handler.Handle(addr, nil)
-			continue
-		case JOIN: handler = &Join{}
-		case READY: handler = &Ready{}
-		case STATE: handler = &State{}
-		case DISCONNECT: handler = &Disconnect{}
-		case MOVE: handler = &Move{}
-		case SHOOT: handler = &Shoot{}
-		case LOCATION: handler = &Location{}
-		case BOXLOCATION: handler = &BoxLocation{}
-		case DAMAGE: handler = &Damage{}
-		default:
-			log.Println("Unkown message type", data[0])
-			continue
-		}
-		_, err = handler.Serialize(data)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		incoming := Incoming{handler, addr}
-		select {
-		case Incomings <- incoming:
-		default:
-			// the first message is more likely to be out of date, so drop that one
-			<-Incomings
-			Incomings <- incoming
-			log.Println("Error: queue is full, dropping message")
-		}
-	}
+	return UdpConn.Close()
 }
 
 func ClientSend(handler encoding.BinaryMarshaler) {
@@ -195,12 +121,12 @@ func ClientSend(handler encoding.BinaryMarshaler) {
 }
 
 func ClientSendRaw(data []byte) {
-	n, err := udpConn.Write(data)
+	n, err := UdpConn.Write(data)
 	if err != nil {
 		panic(err)
 		return
 	}
-	atomic.AddUint64(&outgoingBytesPerSecond, uint64(n))
+	atomic.AddUint64(&OutBps, uint64(n))
 }
 
 func ServerSend(handler encoding.BinaryMarshaler, addr *net.UDPAddr) {
@@ -214,15 +140,14 @@ func ServerSend(handler encoding.BinaryMarshaler, addr *net.UDPAddr) {
 
 // SendRaw is the same as Send but takes bytes
 func ServerSendRaw(data []byte, addr *net.UDPAddr) {
-	n, err := udpConn.WriteToUDP(data, addr)
+	n, err := UdpConn.WriteToUDP(data, addr)
 	if err != nil {
 		panic(err)
 		return
 	}
-	atomic.AddUint64(&outgoingBytesPerSecond, uint64(n))
+	atomic.AddUint64(&OutBps, uint64(n))
 }
 
 type Handler interface {
-	Handle(addr *net.UDPAddr, game *Game)
 	Serialize(b []byte) ([]byte, error)
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jakecoffman/tanklets"
 	"math/rand"
+	"github.com/jakecoffman/tanklets/server"
 )
 
 const (
@@ -20,6 +21,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	tanklets.IsServer = true
 	tanklets.NetInit("0.0.0.0:1234")
+	go server.Recv()
 	defer func() { fmt.Println(tanklets.NetClose()) }()
 
 	fmt.Println("Server Running")
@@ -69,8 +71,8 @@ func main() {
 	inner:
 		for {
 			select {
-			case incoming := <-tanklets.Incomings:
-				incoming.Handler.Handle(incoming.Addr, game)
+			case incoming := <-tanklets.IncomingPackets:
+				server.ProcessNetwork(incoming, game)
 			case <-physicsTick:
 				// time to do a physics tick
 				break inner

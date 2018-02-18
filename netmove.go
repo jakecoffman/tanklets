@@ -1,8 +1,6 @@
 package tanklets
 
 import (
-	"log"
-	"net"
 	"github.com/jakecoffman/binser"
 )
 
@@ -10,25 +8,6 @@ import (
 type Move struct {
 	Turn, Throttle int8
 	TurretAngle float64
-}
-
-func (m *Move) Handle(addr *net.UDPAddr, game *Game) {
-	if game.State != GameStatePlaying {
-		return
-	}
-
-	tank := game.Tanks[Lookup[addr.String()]]
-	if tank == nil {
-		log.Println("Player not found", addr.String(), Lookup[addr.String()])
-		return
-	}
-	if tank.Destroyed {
-		return
-	}
-
-	tank.NextMove.Turn = m.Turn
-	tank.NextMove.Throttle = m.Throttle
-	tank.NextMove.TurretAngle = m.TurretAngle
 }
 
 func (m Move) MarshalBinary() ([]byte, error) {
@@ -42,7 +21,7 @@ func (m *Move) UnmarshalBinary(b []byte) error {
 
 func (m *Move) Serialize(b []byte) ([]byte, error) {
 	stream := binser.NewStream(b)
-	var t uint8 = MOVE
+	var t uint8 = PacketMove
 	stream.Uint8(&t)
 	var atRest uint8
 	if !stream.IsReading() && m.Turn == 0 && m.Throttle == 0 {

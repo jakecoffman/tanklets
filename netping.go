@@ -2,7 +2,6 @@ package tanklets
 
 import (
 	"bytes"
-	"net"
 	"time"
 	"github.com/jakecoffman/binser"
 )
@@ -14,18 +13,8 @@ type Ping struct {
 	T time.Time
 }
 
-func (d *Ping) Handle(addr *net.UDPAddr, game *Game) {
-	if IsServer {
-
-	} else {
-		MyPing = time.Now().Sub(d.T)
-		d.T = time.Now()
-		ClientSend(d)
-	}
-}
-
 func (d Ping) MarshalBinary() ([]byte, error) {
-	buf := bytes.NewBuffer([]byte{PING})
+	buf := bytes.NewBuffer([]byte{PacketPing})
 	b, err := d.T.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -43,7 +32,7 @@ func (d *Ping) UnmarshalBinary(buf []byte) error {
 
 func (d *Ping) Serialize(buf []byte) ([]byte, error) {
 	stream := binser.NewStream(buf)
-	var m uint8 = PING
+	var m uint8 = PacketPing
 	stream.Uint8(&m)
 	if !stream.IsReading() {
 		b, err := d.T.MarshalBinary()

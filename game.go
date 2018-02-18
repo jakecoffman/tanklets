@@ -12,12 +12,6 @@ type PlayerID = pkt.PlayerID
 type BulletID = pkt.BulletID
 type BoxID = pkt.BoxID
 
-var (
-	// TODO move this into client code... I think I can refactor the handlers to be in their respective packages
-	// client only
-	Me PlayerID
-)
-
 // Game state
 const (
 	GameStateWaiting = iota

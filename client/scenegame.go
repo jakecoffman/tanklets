@@ -15,6 +15,9 @@ import (
 	"github.com/jakecoffman/tanklets/pkt"
 )
 
+// keep track of who you are
+var Me pkt.PlayerID
+
 type GameScene struct {
 	window *glfw.Window
 	ctx *nk.Context
@@ -43,7 +46,7 @@ const physicsTickrate = 1.0 / 180.0
 func (g *GameScene) Update(dt float64) {
 	accumulator += dt
 	for accumulator >= physicsTickrate {
-		myTank := g.game.Tanks[tanklets.Me]
+		myTank := g.game.Tanks[Me]
 		if myTank == nil {
 			break
 		}
@@ -157,7 +160,7 @@ func (g *GameScene) Destroy() {
 
 func ProcessInput(game *tanklets.Game) {
 	if Player == nil {
-		Player = game.Tanks[tanklets.Me]
+		Player = game.Tanks[Me]
 		if Player == nil {
 			return
 		}
@@ -177,7 +180,7 @@ func ProcessInput(game *tanklets.Game) {
 
 	// update projection and mouse world position
 	// TODO only recalculate when things have changed
-	myTank := game.Tanks[tanklets.Me]
+	myTank := game.Tanks[Me]
 	pos := myTank.Position()
 	x, y := float32(pos.X), float32(pos.Y)
 	sw, sh := float32(screenWidth), float32(screenHeight)

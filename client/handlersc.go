@@ -44,7 +44,7 @@ func initial(packet tanklets.Packet, _ *tanklets.Game) {
 	}
 
 	fmt.Println("I am connected!")
-	tanklets.Me = tanklets.PlayerID(initial.ID)
+	Me = tanklets.PlayerID(initial.ID)
 	tanklets.ClientIsConnected = true
 	tanklets.ClientIsConnecting = false
 }
@@ -60,7 +60,7 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 	tank := game.NewTank(tanklets.PlayerID(j.ID), mgl32.Vec3(j.Color))
 	if j.You > 0 {
 		fmt.Println("Oh, it's me!")
-		tanklets.Me = tank.ID
+		Me = tank.ID
 		//Player = player
 	}
 	game.Tanks[tank.ID] = tank
@@ -75,7 +75,7 @@ func location(packet tanklets.Packet, game *tanklets.Game) {
 
 	player := game.Tanks[tanklets.PlayerID(l.ID)]
 	if player == nil {
-		log.Println("Client", tanklets.Me, "-- Player with ID", l.ID, "not found")
+		log.Println("Client", Me, "-- Player with ID", l.ID, "not found")
 		return
 	}
 	pos := player.Position()
@@ -142,7 +142,7 @@ func damage(packet tanklets.Packet, game *tanklets.Game) {
 	}
 	tank.Destroyed = true
 
-	if d.ID == tanklets.Me {
+	if d.ID == Me {
 		game.State = tanklets.GameStateDead
 	}
 }
@@ -154,7 +154,7 @@ func disconnect(packet tanklets.Packet, game *tanklets.Game) {
 		return
 	}
 
-	fmt.Println("Client", tanklets.Me, "-- Player", d.ID, "Has disonnceted")
+	fmt.Println("Client", Me, "-- Player", d.ID, "Has disonnceted")
 }
 
 func shoot(packet tanklets.Packet, game *tanklets.Game) {

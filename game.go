@@ -16,9 +16,6 @@ type BoxID = pkt.BoxID
 const (
 	GameStateWaiting = iota
 	GameStatePlaying
-	GameStateDead
-	GameStateWin
-	GameStateEveryoneDied
 )
 
 // Collision types

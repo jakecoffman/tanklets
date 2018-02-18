@@ -141,10 +141,6 @@ func damage(packet tanklets.Packet, game *tanklets.Game) {
 		return
 	}
 	tank.Destroyed = true
-
-	if d.ID == Me {
-		game.State = tanklets.GameStateDead
-	}
 }
 
 func disconnect(packet tanklets.Packet, game *tanklets.Game) {

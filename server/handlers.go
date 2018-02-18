@@ -167,4 +167,3 @@ func shoot(packet tanklets.Packet, game *tanklets.Game) {
 	shot := bullet.Location()
 	Players.SendAll(shot)
 }
-func state(packet tanklets.Packet, game *tanklets.Game) {}

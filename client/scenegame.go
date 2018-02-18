@@ -102,7 +102,7 @@ func (g *GameScene) Render() {
 
 	SpaceRenderer.FlushRenderer()
 
-	if g.game.State == tanklets.GameStateDead {
+	if g.game.Tanks[Me].Destroyed {
 		Text.Print("You died", 50, 600, 1)
 	}
 

@@ -62,16 +62,45 @@ func initial(packet tanklets.Packet, game *tanklets.Game) {
 }
 
 func join(packet tanklets.Packet, game *tanklets.Game) {
-	fmt.Println("SERVER Handling join")
 	addr := packet.Addr
-	tank := game.NewTank(Lookup[addr.String()], pkt.GetColor(game.CursorColor.Next()))
+	playerId := Lookup[addr.String()]
+	tank := game.Tanks[playerId]
+
+	fmt.Println("Processing JOIN")
+
+	if tank != nil {
+		// they are already here, so this is a rejoin or name change
+		j := pkt.Join{}
+		if _, err := j.Serialize(packet.Bytes); err != nil {
+			log.Println(err)
+			return
+		}
+		if j.Name != "" {
+			fmt.Println(tank.Name, "is now", j.Name[:11])
+			tank.Name = j.Name[:11]
+			j.ID = tank.ID
+			j.Color = f32.Vec3(tank.Color)
+			Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
+				if tank.ID == id {
+					j.You = 1
+				} else {
+					j.You = 0
+				}
+				tanklets.ServerSend(j, p)
+			})
+		}
+		return
+	}
+
+	tank = game.NewTank(playerId, pkt.GetColor(game.CursorColor.Next()))
 	tank.SetPosition(cp.Vector{10 + float64(rand.Intn(790)), 10 + float64(rand.Intn(580))})
 	// tell this player their ID
-	tanklets.ServerSend(pkt.Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
+	join := pkt.Join{tank.ID, 1, f32.Vec3(tank.Color), tank.Name}
+	tanklets.ServerSend(join, addr)
 	loc := tank.Location()
 	// tell this player where they are
 	tanklets.ServerSend(loc, addr)
-	join := pkt.Join{tank.ID, 0, f32.Vec3(tank.Color)}
+	join.You = 0
 	Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
 		if id == tank.ID {
 			return
@@ -81,7 +110,7 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 		tanklets.ServerSend(loc, p)
 		// tell this player where all the existing players are
 		thisTank := game.Tanks[id]
-		tanklets.ServerSend(pkt.Join{id, 0, f32.Vec3(thisTank.Color)}, addr)
+		tanklets.ServerSend(pkt.Join{id, 0, f32.Vec3(thisTank.Color), thisTank.Name}, addr)
 		tanklets.ServerSend(thisTank.Location(), addr)
 	})
 	// Tell this player about the level
@@ -149,6 +178,10 @@ func shoot(packet tanklets.Packet, game *tanklets.Game) {
 		return
 	}
 	tank := game.Tanks[id]
+
+	if tank.Destroyed {
+		return
+	}
 
 	if time.Now().Sub(tank.LastShot) < tanklets.ShotCooldown {
 		return

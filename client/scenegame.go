@@ -22,8 +22,12 @@ type GameScene struct {
 	window *glfw.Window
 	ctx *nk.Context
 
-	game *tanklets.Game
-	isReady bool
+	game      *tanklets.Game
+	isReady   bool
+	hideDebug bool
+	displayNames bool
+
+	nameText []byte
 }
 
 func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
@@ -37,6 +41,7 @@ func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
 		window: w,
 		ctx: ctx,
 		game: game,
+		nameText: make([]byte, 256),
 	}
 }
 
@@ -65,7 +70,7 @@ network:
 			break network
 		}
 	}
-	ProcessInput(g.game)
+	g.ProcessInput()
 	g.game.Update(dt)
 }
 
@@ -103,35 +108,51 @@ func (g *GameScene) Render() {
 	SpaceRenderer.FlushRenderer()
 
 	if g.game.Tanks[Me].Destroyed {
-		Text.Print("You died", 50, 600, 1)
+		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
+		Text.Print("You died", float32(screenWidth)/2, float32(screenHeight)/2, 2)
 	}
 
+	if g.displayNames {
+		Text.SetProjection(projection)
+		for _, t := range g.game.Tanks {
+			Text.Print(t.Name, float32(t.Position().X-10), float32(t.Position().Y-20), 0.5)
+		}
+	}
+
+	g.Gui()
+}
+
+const (
+	debugW = 180
+	debugH = 140
+)
+
+func (g *GameScene) Gui() {
 	nk.NkPlatformNewFrame()
 
-	bounds := nk.NkRect(0, 0, 200, 120)
-	update := nk.NkBegin(g.ctx, "Debug", bounds, nk.WindowMinimizable)
-
-	if update > 0 {
-		nk.NkLayoutRowDynamic(g.ctx, 20, 1)
-		{
-			nk.NkLabel(g.ctx, fmt.Sprint("ping: ", pkt.MyPing), nk.TextLeft)
+	if !g.hideDebug {
+		bounds := nk.NkRect(float32(screenWidth)-debugW, 0, debugW, debugH)
+		update := nk.NkBegin(g.ctx, "Debug", bounds, nk.WindowMovable)
+		if update > 0 {
+			nk.NkLayoutRowDynamic(g.ctx, 20, 1)
+			{
+				nk.NkLabel(g.ctx, fmt.Sprint("ping: ", pkt.MyPing), nk.TextLeft)
+				nk.NkLabel(g.ctx, fmt.Sprint("fps: ", fps), nk.TextLeft)
+				nk.NkLabel(g.ctx, fmt.Sprint("in: ", gutils.Bytes(tanklets.NetworkIn)), nk.TextLeft)
+				nk.NkLabel(g.ctx, fmt.Sprint("out: ", gutils.Bytes(tanklets.NetworkOut)), nk.TextLeft)
+			}
 		}
-		nk.NkLayoutRowDynamic(g.ctx, 20, 1)
-		{
-			nk.NkLabel(g.ctx, fmt.Sprint("in: ", gutils.Bytes(tanklets.NetworkIn)), nk.TextLeft)
-			nk.NkLabel(g.ctx, fmt.Sprint("out: ", gutils.Bytes(tanklets.NetworkOut)), nk.TextLeft)
-		}
+		nk.NkEnd(g.ctx)
 	}
-	nk.NkEnd(g.ctx)
 
 	if g.game.State == tanklets.GameStateWaiting {
-		bounds := nk.NkRect(100, 50, 400, 140)
-		update := nk.NkBegin(g.ctx, "Ready", bounds, nk.WindowTitle | nk.WindowBorder)
+		bounds := nk.NkRect(100, 50, 400, 300)
+		update := nk.NkBegin(g.ctx, "Ready?", bounds, nk.WindowTitle|nk.WindowBorder|nk.WindowMovable)
 
 		if update > 0 {
 			nk.NkLayoutRowDynamic(g.ctx, 0, 1)
 			{
-				nk.NkLabel(g.ctx, "Waiting for all users to ready up...", nk.TextLeft)
+				nk.NkLabel(g.ctx, "Waiting for all users to ready up...", nk.TextCentered)
 				if !g.isReady {
 					if nk.NkButtonLabel(g.ctx, "Ready") > 0 {
 						g.isReady = true
@@ -140,12 +161,17 @@ func (g *GameScene) Render() {
 						tanklets.ClientSend(pkt.Ready{})
 						tanklets.ClientSend(pkt.Ready{})
 					}
+					nk.NkLabel(g.ctx, "Enter your name", nk.TextLeft)
+					nk.NkEditStringZeroTerminated(g.ctx, nk.EditSimple, g.nameText, 11, nk.NkFilterDefault)
+					if nk.NkButtonLabel(g.ctx, "Rename") > 0 {
+						fmt.Println("Sending rename", string(g.nameText[:11]))
+						tanklets.ClientSend(pkt.Join{Name: string(g.nameText[:11])})
+					}
 				}
 			}
 		}
 		nk.NkEnd(g.ctx)
 	}
-
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }
 
@@ -158,13 +184,22 @@ func (g *GameScene) Destroy() {
 	tanklets.NetClose()
 }
 
-func ProcessInput(game *tanklets.Game) {
+func (g *GameScene) ProcessInput() {
+	game := g.game
+
 	if Player == nil {
 		Player = game.Tanks[Me]
 		if Player == nil {
 			return
 		}
 	}
+
+	if Keys[glfw.KeyF10] {
+		g.hideDebug = !g.hideDebug
+		Keys[glfw.KeyF10] = false
+	}
+
+	g.displayNames = Keys[glfw.KeyTab]
 
 	var turn, throttle int8
 	if Keys[glfw.KeyD] {
@@ -200,7 +235,7 @@ func ProcessInput(game *tanklets.Game) {
 		turret = mouseWorld.Sub(Player.Turret.Body.Position())
 	}
 
-	if game.State != tanklets.GameStatePlaying {
+	if game.State != tanklets.GameStatePlaying || myTank.Destroyed {
 		return
 	}
 
@@ -211,11 +246,6 @@ func ProcessInput(game *tanklets.Game) {
 
 	RightDown = false
 	LeftDown = false
-
-	// TODO separate turret aim into a message sent less often since it's never 0 now
-	if turn == 0.0 && throttle == 0.0 && turret.X == 0 && turret.Y == 0 {
-		return
-	}
 
 	// send all of this input to the server
 	myTank.NextMove = pkt.Move{Turn: turn, Throttle: throttle, TurretAngle: math.Atan2(turret.Y, turret.X)}

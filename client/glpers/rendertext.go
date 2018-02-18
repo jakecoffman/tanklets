@@ -53,6 +53,10 @@ func NewTextRenderer(shader *Shader, width, height float32, fontPath string) *Te
 	return t
 }
 
+func (t *TextRenderer) SetProjection(projection mgl32.Mat4) {
+	t.shader.Use().SetMat4("projection", projection)
+}
+
 func (t *TextRenderer) Load(fontPath string, scale uint32) error {
 	low := rune(32)
 	high := rune(127)

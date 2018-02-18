@@ -32,32 +32,21 @@ func MouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Ac
 	if button == glfw.MouseButton1 {
 		LeftDown = action == glfw.Press
 		LeftClick = LeftDown
-		//if action == glfw.Press {
-		//			// give the mouse click a little radius to make it easier to click small shapes.
-		//			//radius := 5.0
-		//
-		//			//info := Space.PointQueryNearest(mouse, radius, GrabFilter)
-		//			//
-		//			//if info.Shape != nil && info.Shape.Body().Mass() < INFINITY {
-		//			//	var nearest Vector
-		//			//	if info.Distance > 0 {
-		//			//		nearest = info.Point
-		//			//	} else {
-		//			//		nearest = mouse
-		//			//	}
-		//			//
-		//			//	body := info.Shape.Body()
-		//			//	mouseJoint = NewPivotJoint2(mouseBody, body, Vector{}, body.WorldToLocal(nearest))
-		//			//	mouseJoint.SetMaxForce(50000)
-		//			//	mouseJoint.SetErrorBias(math.Pow(1.0-0.15, 60.0))
-		//			//	Space.AddConstraint(mouseJoint)
-		//			}
-		//		//} else if mouseJoint != nil {
-		//		//	Space.RemoveConstraint(mouseJoint)
-		//		//	mouseJoint = nil
-		//		//}
 	} else if button == glfw.MouseButton2 {
 		RightDown = action == glfw.Press
 		RightClick = RightDown
+	}
+}
+
+func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	if key == glfw.KeyEscape && action == glfw.Press {
+		window.SetShouldClose(true)
+	}
+	if key >= 0 && key < 1024 {
+		if action == glfw.Press {
+			Keys[key] = true
+		} else if action == glfw.Release {
+			Keys[key] = false
+		}
 	}
 }

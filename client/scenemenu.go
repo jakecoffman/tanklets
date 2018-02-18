@@ -60,8 +60,8 @@ func (m *MainMenuScene) Render() {
 	ctx := m.ctx
 
 	// Layout
-	bounds := nk.NkRect(50, 50, 230, 230)
-	update := nk.NkBegin(ctx, "Tank Game", bounds, nk.WindowTitle | nk.WindowBorder)
+	bounds := nk.NkRect(20, 20, 400, 400)
+	update := nk.NkBegin(ctx, "Tank Game", bounds, nk.WindowTitle | nk.WindowMovable | nk.WindowScalable)
 
 	if update > 0 {
 		switch m.state {
@@ -90,9 +90,10 @@ func (m *MainMenuScene) Render() {
 		default:
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				if nk.NkButtonLabel(ctx, "Play Online") > 0 {
+				if nk.NkButtonLabel(ctx, "Play Now") > 0 {
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
+					// TODO
 					tanklets.NetInit("127.0.0.1:1234")
 					go Recv()
 				}

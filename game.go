@@ -81,9 +81,8 @@ func NewGame(width, height float64) *Game {
 		game.Walls = append(game.Walls, seg)
 	}
 
-	game.BulletCollisionHandler = space.NewWildcardCollisionHandler(CollisionTypeBullet)
-
 	if IsServer {
+		game.BulletCollisionHandler = space.NewWildcardCollisionHandler(CollisionTypeBullet)
 		fmt.Println("Server making some boxes")
 		w, h := int(width), int(height)
 		boxIdCursor := gutils.NewCursor(0, 1e9)

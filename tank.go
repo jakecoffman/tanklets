@@ -7,6 +7,7 @@ import (
 	"github.com/jakecoffman/cp"
 	"math"
 	"github.com/jakecoffman/tanklets/pkt"
+	"fmt"
 )
 
 // default tank attributes (power-ups could change them!)
@@ -35,6 +36,7 @@ type Tank struct {
 
 	width, height float64
 	Color         mgl32.Vec3
+	Name string
 
 	LastShot time.Time
 
@@ -55,6 +57,7 @@ type Turret struct {
 func (g *Game) NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tank := &Tank{
 		ID:    id,
+		Name: fmt.Sprintf("Player %v", id),
 		Color: color,
 	}
 	tank.Body = g.Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, TankWidth, TankHeight)))

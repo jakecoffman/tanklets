@@ -56,12 +56,20 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 		return
 	}
 
+	tank := game.Tanks[j.ID]
+	if tank != nil {
+		// player already joined, this is informational
+		tank.Color = mgl32.Vec3(j.Color)
+		fmt.Println(tank.Name, "is now", j.Name)
+		tank.Name = j.Name
+		return
+	}
+
 	fmt.Println("Player joined")
-	tank := game.NewTank(tanklets.PlayerID(j.ID), mgl32.Vec3(j.Color))
+	tank = game.NewTank(j.ID, mgl32.Vec3(j.Color))
 	if j.You > 0 {
 		fmt.Println("Oh, it's me!")
 		Me = tank.ID
-		//Player = player
 	}
 	game.Tanks[tank.ID] = tank
 }

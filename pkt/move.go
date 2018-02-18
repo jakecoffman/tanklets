@@ -23,6 +23,7 @@ func (m *Move) Serialize(b []byte) ([]byte, error) {
 	stream := binser.NewStream(b)
 	var t uint8 = PacketMove
 	stream.Uint8(&t)
+	stream.Float64(&m.TurretAngle)
 	var atRest uint8
 	if !stream.IsReading() && m.Turn == 0 && m.Throttle == 0 {
 		atRest = 1
@@ -35,6 +36,5 @@ func (m *Move) Serialize(b []byte) ([]byte, error) {
 		m.Turn = 0
 		m.Throttle = 0
 	}
-	stream.Float64(&m.TurretAngle)
 	return stream.Bytes()
 }

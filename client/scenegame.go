@@ -156,10 +156,6 @@ func (g *GameScene) Destroy() {
 }
 
 func ProcessInput(game *tanklets.Game) {
-	if game.State != tanklets.GameStatePlaying {
-		return
-	}
-
 	if Player == nil {
 		Player = game.Tanks[tanklets.Me]
 		if Player == nil {
@@ -199,6 +195,10 @@ func ProcessInput(game *tanklets.Game) {
 	} else {
 		mouseWorld := cp.Vector{float64(obj.X()), float64(obj.Y())}
 		turret = mouseWorld.Sub(Player.Turret.Body.Position())
+	}
+
+	if game.State != tanklets.GameStatePlaying {
+		return
 	}
 
 	if LeftClick {

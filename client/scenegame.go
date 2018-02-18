@@ -107,7 +107,9 @@ func (g *GameScene) Render() {
 
 	SpaceRenderer.FlushRenderer()
 
-	if g.game.Tanks[Me].Destroyed {
+	myTank := g.game.Tanks[Me]
+
+	if myTank != nil && myTank.Destroyed {
 		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
 		Text.Print("You died", float32(screenWidth)/2, float32(screenHeight)/2, 2)
 	}

@@ -82,7 +82,6 @@ func NewGame(width, height float64) *Game {
 	}
 
 	if IsServer {
-		game.BulletCollisionHandler = space.NewWildcardCollisionHandler(CollisionTypeBullet)
 		fmt.Println("Server making some boxes")
 		w, h := int(width), int(height)
 		boxIdCursor := gutils.NewCursor(0, 1e9)
@@ -94,6 +93,12 @@ func NewGame(width, height float64) *Game {
 			box := game.NewBox(BoxID(boxIdCursor.Next()))
 			box.SetPosition(cp.Vector{X: float64(i), Y: height/2})
 		}
+	}
+
+	game.BulletCollisionHandler = space.NewWildcardCollisionHandler(CollisionTypeBullet)
+	game.BulletCollisionHandler.PreSolveFunc = func(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
+		arb.Ignore()
+		return false
 	}
 
 	return game

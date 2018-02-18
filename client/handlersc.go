@@ -83,7 +83,7 @@ func location(packet tanklets.Packet, game *tanklets.Game) {
 
 	player := game.Tanks[tanklets.PlayerID(l.ID)]
 	if player == nil {
-		log.Println("Client", Me, "-- Player with ID", l.ID, "not found")
+		log.Println("Client", Me, "-- Tank with ID", l.ID, "not found")
 		return
 	}
 	pos := player.Position()

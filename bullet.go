@@ -2,10 +2,8 @@ package tanklets
 
 import (
 	"log"
-	"math"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
-	"fmt"
 	"github.com/jakecoffman/tanklets/pkt"
 )
 
@@ -94,74 +92,6 @@ func (bullet *Bullet) Destroy(now bool) {
 		bullet.Shape = nil
 		bullet.Body = nil
 	}, nil, nil)
-}
-
-func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
-	// since bullets don't push around things, this is good to do right away
-	// TODO: power-ups that make bullets non-lethal would be cool
-	arb.Ignore()
-
-	// clients don't decide this stuff, so just ignore
-	// TODO: Don't set this custom callback for clients at all
-	if !IsServer {
-		return false
-	}
-
-	a, b := arb.Shapes()
-	bullet := a.UserData.(*Bullet)
-
-	switch b.UserData.(type) {
-	case *Tank:
-		tank := b.UserData.(*Tank)
-
-		// Before first bounce, tank can't hit itself
-		if bullet.Bounce < 1 && bullet.PlayerID == tank.ID {
-			return false
-		}
-
-		if !tank.Destroyed {
-			tank.Destroyed = true
-			fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
-			Players.SendAll(pkt.Damage{tank.ID, bullet.PlayerID})
-		}
-
-		bullet.Destroy(false)
-
-		bullet.Bounce = 100
-		shot := bullet.Location()
-		Players.SendAll(shot)
-	case *Bullet:
-		bullet2 := b.UserData.(*Bullet)
-
-		bullet.Destroy(false)
-		bullet2.Destroy(false)
-
-		bullet.Bounce = 100
-		bullet2.Bounce = 100
-
-		shot1 := bullet.Location()
-		shot2 := bullet2.Location()
-		Players.SendAll(shot1, shot2)
-	default:
-		// This will bounce over anything that isn't a tank or bullet, probably check for wall here?
-
-		bullet.Bounce++
-
-		if bullet.Bounce > 1 {
-			bullet.Destroy(false)
-		} else {
-			// bounce
-			d := bullet.Body.Velocity()
-			normal := arb.Normal()
-			reflection := d.Sub(normal.Mult(2 * d.Dot(normal)))
-			bullet.Body.SetVelocityVector(reflection)
-			bullet.Body.SetAngle(math.Atan2(reflection.Y, reflection.X))
-		}
-
-		shot := bullet.Location()
-		Players.SendAll(shot)
-	}
-	return false
 }
 
 func (bullet *Bullet) Location() *pkt.Shoot {

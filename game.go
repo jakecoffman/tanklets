@@ -49,6 +49,8 @@ type Game struct {
 	Tanks   map[PlayerID]*Tank
 	Boxes   map[BoxID]*Box
 
+	BulletCollisionHandler *cp.CollisionHandler
+
 	Walls []*cp.Shape
 
 	State int
@@ -88,6 +90,8 @@ func NewGame(width, height float64) *Game {
 		game.Walls = append(game.Walls, seg)
 	}
 
+	game.BulletCollisionHandler = space.NewWildcardCollisionHandler(CollisionTypeBullet)
+
 	if IsServer {
 		fmt.Println("Server making some boxes")
 		w, h := int(width), int(height)
@@ -102,9 +106,6 @@ func NewGame(width, height float64) *Game {
 		}
 	}
 
-	handler := space.NewWildcardCollisionHandler(CollisionTypeBullet)
-	handler.PreSolveFunc = BulletPreSolve
-
 	return game
 }
 
@@ -115,23 +116,5 @@ func (g *Game) Update(dt float64) {
 
 	for _, bullet := range g.Bullets {
 		bullet.Update(dt)
-	}
-
-	if !IsServer {
-		return
-	}
-
-	if g.State == GameStateWaiting && len(g.Tanks) > 0 {
-		allReady := true
-		for _, t := range g.Tanks {
-			if !t.Ready {
-				allReady = false
-				break
-			}
-		}
-		if allReady {
-			g.State = GameStatePlaying
-			Players.SendAll(pkt.State{State: GameStatePlaying})
-		}
 	}
 }

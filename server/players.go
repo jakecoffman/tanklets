@@ -1,11 +1,15 @@
-package tanklets
+package server
 
 import (
 	"net"
 	"sync"
 	"encoding"
 	"log"
+	"github.com/jakecoffman/tanklets/pkt"
+	"github.com/jakecoffman/tanklets"
 )
+
+type PlayerID = pkt.PlayerID
 
 // PlayerLookup lets the server find players by their address or PlayerId
 type PlayerLookup struct {
@@ -56,7 +60,7 @@ func (p *PlayerLookup) SendAll(packets ...encoding.BinaryMarshaler) {
 			log.Fatal(err)
 		}
 		for _, player := range p.players {
-			ServerSendRaw(data, player)
+			tanklets.ServerSendRaw(data, player)
 		}
 	}
 	p.RUnlock()

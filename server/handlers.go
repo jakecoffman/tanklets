@@ -25,7 +25,6 @@ func init() {
 	handlers[pkt.PacketJoin] = join
 	handlers[pkt.PacketDisconnect] = disconnect
 	handlers[pkt.PacketMove] = move
-	handlers[pkt.PacketPing] = ping
 	handlers[pkt.PacketReady] = ready
 	handlers[pkt.PacketShoot] = shoot
 }
@@ -46,7 +45,7 @@ func initial(packet tanklets.Packet, game *tanklets.Game) {
 		log.Println(err)
 		return
 	}
-	id, ok := tanklets.Lookup[addr.String()]
+	id, ok := Lookup[addr.String()]
 
 	if ok {
 		initial.ID = id
@@ -54,8 +53,8 @@ func initial(packet tanklets.Packet, game *tanklets.Game) {
 	} else {
 		id = tanklets.PlayerID(game.CursorPlayerId.Next())
 		initial.ID = id
-		tanklets.Lookup[addr.String()] = id
-		tanklets.Players.Put(id, addr)
+		Lookup[addr.String()] = id
+		Players.Put(id, addr)
 		fmt.Println("Player", id, "connected", addr)
 	}
 
@@ -65,7 +64,7 @@ func initial(packet tanklets.Packet, game *tanklets.Game) {
 func join(packet tanklets.Packet, game *tanklets.Game) {
 	fmt.Println("SERVER Handling join")
 	addr := packet.Addr
-	tank := game.NewTank(tanklets.Lookup[addr.String()], pkt.GetColor(game.CursorColor.Next()))
+	tank := game.NewTank(Lookup[addr.String()], pkt.GetColor(game.CursorColor.Next()))
 	tank.SetPosition(cp.Vector{10 + float64(rand.Intn(790)), 10 + float64(rand.Intn(580))})
 	// tell this player their ID
 	tanklets.ServerSend(pkt.Join{tank.ID, 1, f32.Vec3(tank.Color)}, addr)
@@ -73,7 +72,7 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 	// tell this player where they are
 	tanklets.ServerSend(loc, addr)
 	join := pkt.Join{tank.ID, 0, f32.Vec3(tank.Color)}
-	tanklets.Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
+	Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
 		if id == tank.ID {
 			return
 		}
@@ -89,8 +88,8 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 	for _, box := range game.Boxes {
 		tanklets.ServerSend(box.Location(), addr)
 	}
-	tanklets.Lookup[addr.String()] = tank.ID
-	tanklets.Players.Put(tank.ID, addr)
+	Lookup[addr.String()] = tank.ID
+	Players.Put(tank.ID, addr)
 	game.Tanks[tank.ID] = tank
 	fmt.Println("tank", tank.ID, "joined")
 }
@@ -98,19 +97,19 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 func disconnect(packet tanklets.Packet, game *tanklets.Game) {
 	addr := packet.Addr
 
-	playerID := tanklets.Lookup[addr.String()]
-	player := tanklets.Players.Get(playerID)
+	playerID := Lookup[addr.String()]
+	player := Players.Get(playerID)
 	if player == nil {
 		// this is normal, we spam disconnect when leaving to ensure the server gets it
 		return
 	}
 
-	tanklets.Players.Delete(playerID)
-	delete(tanklets.Lookup, addr.String())
+	Players.Delete(playerID)
+	delete(Lookup, addr.String())
 	game.Tanks[playerID].Destroyed = true
 
 	// tell others they left & destroyed
-	tanklets.Players.SendAll(pkt.Disconnect{ID: uint16(playerID)}, pkt.Damage{ID: playerID, Killer: playerID})
+	Players.SendAll(pkt.Disconnect{ID: uint16(playerID)}, pkt.Damage{ID: playerID, Killer: playerID})
 }
 func move(packet tanklets.Packet, game *tanklets.Game) {
 	m := pkt.Move{}
@@ -124,9 +123,9 @@ func move(packet tanklets.Packet, game *tanklets.Game) {
 		return
 	}
 
-	tank := game.Tanks[tanklets.Lookup[addr.String()]]
+	tank := game.Tanks[Lookup[addr.String()]]
 	if tank == nil {
-		log.Println("Player not found", addr.String(), tanklets.Lookup[addr.String()])
+		log.Println("Player not found", addr.String(), Lookup[addr.String()])
 		return
 	}
 	if tank.Destroyed {
@@ -137,17 +136,16 @@ func move(packet tanklets.Packet, game *tanklets.Game) {
 	tank.NextMove.Throttle = m.Throttle
 	tank.NextMove.TurretAngle = m.TurretAngle
 }
-func ping(packet tanklets.Packet, game *tanklets.Game) {}
 func ready(packet tanklets.Packet, game *tanklets.Game) {
-	tank := game.Tanks[tanklets.Lookup[packet.Addr.String()]]
+	tank := game.Tanks[Lookup[packet.Addr.String()]]
 	tank.Ready = true
 }
 func shoot(packet tanklets.Packet, game *tanklets.Game) {
 	addr := packet.Addr
-	id := tanklets.Lookup[addr.String()]
-	player := tanklets.Players.Get(id)
+	id := Lookup[addr.String()]
+	player := Players.Get(id)
 	if player == nil {
-		log.Println("Player not found", addr.String(), tanklets.Lookup[addr.String()])
+		log.Println("Player not found", addr.String(), Lookup[addr.String()])
 		return
 	}
 	tank := game.Tanks[id]
@@ -167,6 +165,6 @@ func shoot(packet tanklets.Packet, game *tanklets.Game) {
 	//bullet.Shape.SetFilter(cp.NewShapeFilter(uint(player.ID), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
 
 	shot := bullet.Location()
-	tanklets.Players.SendAll(shot)
+	Players.SendAll(shot)
 }
 func state(packet tanklets.Packet, game *tanklets.Game) {}

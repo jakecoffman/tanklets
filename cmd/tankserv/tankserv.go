@@ -38,11 +38,12 @@ func main() {
 	go func() {
 		for range pingTick {
 			ping := pkt.Ping{T: time.Now()}
-			tanklets.Players.SendAll(ping)
+			server.Players.SendAll(ping)
 		}
 	}()
 
 	game := tanklets.NewGame(800, 600)
+	game.BulletCollisionHandler.PreSolveFunc = server.BulletPreSolve
 
 	for {
 		currentFrame := time.Now()
@@ -59,11 +60,26 @@ func main() {
 		}
 		game.Update(dt.Seconds())
 
+		// TODO: this should live in the server's game
+		if game.State == tanklets.GameStateWaiting && len(game.Tanks) > 0 {
+			allReady := true
+			for _, t := range game.Tanks {
+				if !t.Ready {
+					allReady = false
+					break
+				}
+			}
+			if allReady {
+				game.State = tanklets.GameStatePlaying
+				server.Players.SendAll(pkt.State{State: tanklets.GameStatePlaying})
+			}
+		}
+
 		// TODO move this check to the disconnect handler
-		if !hasHadPlayersConnect && tanklets.Players.Len() > 0 {
+		if !hasHadPlayersConnect && server.Players.Len() > 0 {
 			hasHadPlayersConnect = true
 		}
-		if tanklets.Players.Len() == 0 && hasHadPlayersConnect {
+		if server.Players.Len() == 0 && hasHadPlayersConnect {
 			fmt.Println("All players have disconnected, shutting down")
 			return
 		}
@@ -80,12 +96,12 @@ func main() {
 			case <-updateTick:
 				// 58 bytes per n players, 10 times per second = 580n^2
 				for _, tank := range game.Tanks {
-					tanklets.Players.SendAll(tank.Location())
+					server.Players.SendAll(tank.Location())
 				}
 				for _, box := range game.Boxes {
 					loc := box.Location()
 					if loc != BoxLocations[box.ID] {
-						tanklets.Players.SendAll(loc)
+						server.Players.SendAll(loc)
 						BoxLocations[box.ID] = loc
 					}
 				}

@@ -1,18 +1,19 @@
 package server
 
 import (
-	"github.com/jakecoffman/tanklets"
 	"fmt"
-	"github.com/jakecoffman/cp"
-	"net"
-	"math/rand"
-	"golang.org/x/image/math/f32"
 	"log"
+	"math/rand"
+	"net"
 	"time"
+
+	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/tanklets"
 	"github.com/jakecoffman/tanklets/pkt"
+	"golang.org/x/image/math/f32"
 )
 
-type packetHandler func(packet tanklets.Packet, game *tanklets.Game)
+type packetHandler func(packet tanklets.Packet, game *Game)
 
 var handlers [pkt.PacketMax]packetHandler
 
@@ -29,15 +30,15 @@ func init() {
 	handlers[pkt.PacketShoot] = shoot
 }
 
-func ProcessNetwork(packet tanklets.Packet, game *tanklets.Game) {
+func ProcessNetwork(packet tanklets.Packet, game *Game) {
 	handlers[packet.Bytes[0]](packet, game)
 }
 
-func noop(packet tanklets.Packet, _ *tanklets.Game) {
+func noop(packet tanklets.Packet, _ *Game) {
 	log.Println("Unhandled server packet", packet.Bytes[0])
 }
 
-func initial(packet tanklets.Packet, game *tanklets.Game) {
+func initial(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
 	initial := pkt.Initial{}
 	_, err := initial.Serialize(packet.Bytes)
@@ -61,7 +62,9 @@ func initial(packet tanklets.Packet, game *tanklets.Game) {
 	tanklets.ServerSend(initial, addr)
 }
 
-func join(packet tanklets.Packet, game *tanklets.Game) {
+var HasHadPlayersConnect bool
+
+func join(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
 	playerId := Lookup[addr.String()]
 	tank := game.Tanks[playerId]
@@ -75,20 +78,22 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 			log.Println(err)
 			return
 		}
-		if j.Name != "" {
-			fmt.Println(tank.Name, "is now", j.Name[:11])
-			tank.Name = j.Name[:11]
-			j.ID = tank.ID
-			j.Color = f32.Vec3(tank.Color)
-			Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
-				if tank.ID == id {
-					j.You = 1
-				} else {
-					j.You = 0
-				}
-				tanklets.ServerSend(j, p)
-			})
+		if j.Name == "" || len(j.Name) > 10 {
+			log.Println("Player sent invalid name")
+			return
 		}
+		fmt.Println(tank.Name, "is now", j.Name)
+		tank.Name = j.Name
+		j.ID = tank.ID
+		j.Color = f32.Vec3(tank.Color)
+		Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
+			if tank.ID == id {
+				j.You = 1
+			} else {
+				j.You = 0
+			}
+			tanklets.ServerSend(j, p)
+		})
 		return
 	}
 
@@ -136,9 +141,10 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 	}
 	game.Tanks[tank.ID] = tank
 	fmt.Println("tank", tank.ID, "joined")
+	HasHadPlayersConnect = true
 }
 
-func disconnect(packet tanklets.Packet, game *tanklets.Game) {
+func disconnect(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
 
 	playerID := Lookup[addr.String()]
@@ -157,7 +163,7 @@ func disconnect(packet tanklets.Packet, game *tanklets.Game) {
 	// tell others they left & destroyed
 	Players.SendAll(pkt.Disconnect{ID: uint16(playerID)}, pkt.Damage{ID: playerID, Killer: playerID})
 }
-func move(packet tanklets.Packet, game *tanklets.Game) {
+func move(packet tanklets.Packet, game *Game) {
 	m := pkt.Move{}
 	if _, err := m.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
@@ -182,13 +188,14 @@ func move(packet tanklets.Packet, game *tanklets.Game) {
 	tank.NextMove.Throttle = m.Throttle
 	tank.NextMove.TurretAngle = m.TurretAngle
 }
-func ready(packet tanklets.Packet, game *tanklets.Game) {
+func ready(packet tanklets.Packet, game *Game) {
 	tank := game.Tanks[Lookup[packet.Addr.String()]]
 	if tank != nil {
+		fmt.Println("Got a ready from", tank.ID)
 		tank.Ready = true
 	}
 }
-func shoot(packet tanklets.Packet, game *tanklets.Game) {
+func shoot(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
 	id := Lookup[addr.String()]
 	player := Players.Get(id)

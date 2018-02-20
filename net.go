@@ -2,11 +2,12 @@ package tanklets
 
 import (
 	"encoding"
+	"fmt"
 	"log"
 	"net"
 	"sync/atomic"
 	"time"
-	"fmt"
+
 	"github.com/jakecoffman/tanklets/gutils"
 	"github.com/jakecoffman/tanklets/pkt"
 )
@@ -22,11 +23,6 @@ type Packet struct {
 	Addr    *net.UDPAddr
 }
 
-type Outgoing struct {
-	data []byte
-	addr *net.UDPAddr
-}
-
 var IncomingPackets = make(chan Packet, 1000)
 
 var tick = time.Tick(1 * time.Second)
@@ -36,6 +32,7 @@ var OutBps uint64
 var NetworkIn, NetworkOut uint64
 
 func init() {
+	// calculates bps for client and server
 	go func() {
 		for {
 			select {
@@ -45,9 +42,8 @@ func init() {
 				atomic.StoreUint64(&InBps, 0)
 				atomic.StoreUint64(&OutBps, 0)
 
-				if IsServer {
-					fmt.Println("in :", gutils.Bytes(NetworkIn))
-					fmt.Println("out:", gutils.Bytes(NetworkOut))
+				if IsServer && NetworkIn > 0 && NetworkOut > 0 {
+					fmt.Println("in :", gutils.Bytes(NetworkIn), "out:", gutils.Bytes(NetworkOut))
 				}
 			}
 		}
@@ -132,8 +128,4 @@ func ServerSendRaw(data []byte, addr *net.UDPAddr) {
 		return
 	}
 	atomic.AddUint64(&OutBps, uint64(n))
-}
-
-type Handler interface {
-	Serialize(b []byte) ([]byte, error)
 }

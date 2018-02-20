@@ -1,10 +1,11 @@
 package tanklets
 
 import (
-	"github.com/jakecoffman/cp"
-	"github.com/engoengine/math"
-	"github.com/jakecoffman/tanklets/gutils"
 	"fmt"
+	"math"
+
+	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/tanklets/gutils"
 	"github.com/jakecoffman/tanklets/pkt"
 )
 
@@ -74,7 +75,7 @@ func NewGame(width, height float64) *Game {
 	}
 
 	for i := 0; i < len(sides); i += 2 {
-		seg := space.AddShape(cp.NewSegment(space.StaticBody, sides[i], sides[i+1], 0))
+		seg := space.AddShape(cp.NewSegment(space.StaticBody, sides[i], sides[i+1], 1))
 		seg.SetElasticity(1)
 		seg.SetFriction(0)
 		seg.SetFilter(PlayerFilter)

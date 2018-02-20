@@ -3,12 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/jakecoffman/tanklets"
-	"math/rand"
-	"github.com/jakecoffman/tanklets/server"
 	"github.com/jakecoffman/tanklets/pkt"
+	"github.com/jakecoffman/tanklets/server"
 )
 
 const (
@@ -27,13 +27,6 @@ func main() {
 
 	fmt.Println("Server Running")
 
-	var hasHadPlayersConnect bool
-	var accumulator float64
-	var dt time.Duration
-	lastFrame := time.Now()
-
-	physicsTick := time.Tick(time.Second / physicsTicks)
-	updateTick := time.Tick(serverUpdates)
 	pingTick := time.Tick(1*time.Second)
 	go func() {
 		for range pingTick {
@@ -42,8 +35,47 @@ func main() {
 		}
 	}()
 
-	game := tanklets.NewGame(800, 600)
-	game.BulletCollisionHandler.PreSolveFunc = server.BulletPreSolve
+	for {
+		game := server.NewGame(800, 600)
+		game.BulletCollisionHandler.PreSolveFunc = server.BulletPreSolve
+
+		fmt.Println("Waiting for players to connect")
+
+		for {
+			// TODO: Move this above game creation, handle clients connecting, wait for people to
+			//       connect from the lobby instead. Once the game starts, then start the countdown.
+			select {
+			case incoming := <-tanklets.IncomingPackets:
+				server.ProcessNetwork(incoming, game)
+			}
+
+			allReady := true
+			for _, t := range game.Tanks {
+				if !t.Ready {
+					allReady = false
+					break
+				}
+			}
+			if len(game.Tanks) > 0 && allReady {
+				game.State = tanklets.GameStatePlaying
+				server.Players.SendAll(pkt.State{State: tanklets.GameStatePlaying})
+				break
+			}
+		}
+
+		fmt.Println("Let's do this")
+		Loop(game)
+	}
+}
+
+var BoxLocations = map[tanklets.BoxID]pkt.BoxLocation{}
+
+func Loop(game *server.Game) {
+	physicsTick := time.Tick(time.Second / physicsTicks)
+	updateTick := time.Tick(serverUpdates)
+	var accumulator float64
+	var dt time.Duration
+	lastFrame := time.Now()
 
 	for {
 		currentFrame := time.Now()
@@ -60,27 +92,9 @@ func main() {
 		}
 		game.Update(dt.Seconds())
 
-		// TODO: this should live in the server's game
-		if game.State == tanklets.GameStateWaiting && len(game.Tanks) > 0 {
-			allReady := true
-			for _, t := range game.Tanks {
-				if !t.Ready {
-					allReady = false
-					break
-				}
-			}
-			if allReady {
-				game.State = tanklets.GameStatePlaying
-				server.Players.SendAll(pkt.State{State: tanklets.GameStatePlaying})
-			}
-		}
-
-		// TODO move this check to the disconnect handler
-		if !hasHadPlayersConnect && server.Players.Len() > 0 {
-			hasHadPlayersConnect = true
-		}
-		if server.Players.Len() == 0 && hasHadPlayersConnect {
+		if server.Players.Len() == 0 && server.HasHadPlayersConnect {
 			fmt.Println("All players have disconnected, shutting down")
+			server.HasHadPlayersConnect = false
 			return
 		}
 
@@ -94,7 +108,6 @@ func main() {
 				// time to do a physics tick
 				break inner
 			case <-updateTick:
-				// 58 bytes per n players, 10 times per second = 580n^2
 				for _, tank := range game.Tanks {
 					server.Players.SendAll(tank.Location())
 				}
@@ -109,5 +122,3 @@ func main() {
 		}
 	}
 }
-
-var BoxLocations = map[tanklets.BoxID]pkt.BoxLocation{}

@@ -13,6 +13,7 @@ import (
 	"math"
 	"github.com/jakecoffman/tanklets/gutils"
 	"github.com/jakecoffman/tanklets/pkt"
+	"strings"
 )
 
 // keep track of who you are
@@ -20,11 +21,11 @@ var Me pkt.PlayerID
 
 type GameScene struct {
 	window *glfw.Window
-	ctx *nk.Context
+	ctx    *nk.Context
 
-	game      *tanklets.Game
-	isReady   bool
-	hideDebug bool
+	game         *tanklets.Game
+	isReady      bool
+	hideDebug    bool
 	displayNames bool
 
 	nameText []byte
@@ -38,14 +39,15 @@ func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
 	fmt.Println("Sending JOIN command")
 	tanklets.ClientSend(pkt.Join{})
 	return &GameScene{
-		window: w,
-		ctx: ctx,
-		game: game,
+		window:   w,
+		ctx:      ctx,
+		game:     game,
 		nameText: make([]byte, 256),
 	}
 }
 
 var accumulator = 0.
+
 const physicsTickrate = 1.0 / 180.0
 
 func (g *GameScene) Update(dt float64) {
@@ -111,14 +113,14 @@ func (g *GameScene) Render() {
 
 	if myTank != nil && myTank.Destroyed {
 		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
+		Text.SetColor(1, 0, 0, 1)
 		Text.Print("You died", float32(screenWidth)/2, float32(screenHeight)/2, 2)
 	}
 
-	if g.displayNames {
-		Text.SetProjection(projection)
-		for _, t := range g.game.Tanks {
-			Text.Print(t.Name, float32(t.Position().X-10), float32(t.Position().Y-20), 0.5)
-		}
+	Text.SetProjection(projection)
+	Text.SetColor(1, 1, 1, 0.5)
+	for _, t := range g.game.Tanks {
+		Text.Print(t.Name, float32(t.Position().X-float64(len(t.Name)*2)), float32(t.Position().Y-20), 0.5)
 	}
 
 	g.Gui()
@@ -148,14 +150,22 @@ func (g *GameScene) Gui() {
 	}
 
 	if g.game.State == tanklets.GameStateWaiting {
-		bounds := nk.NkRect(100, 50, 400, 300)
-		update := nk.NkBegin(g.ctx, "Ready?", bounds, nk.WindowTitle|nk.WindowBorder|nk.WindowMovable)
-
-		if update > 0 {
-			nk.NkLayoutRowDynamic(g.ctx, 0, 1)
-			{
+		if g.isReady {
+			bounds := nk.NkRect(0, 0, 400, 100)
+			update := nk.NkBegin(g.ctx, "Waiting", bounds, nk.WindowTitle|nk.WindowBorder|nk.WindowMovable)
+			if update > 0 {
+				nk.NkLayoutRowDynamic(g.ctx, 0, 1)
 				nk.NkLabel(g.ctx, "Waiting for all users to ready up...", nk.TextCentered)
-				if !g.isReady {
+			}
+			nk.NkEnd(g.ctx)
+		} else {
+			bounds := nk.NkRect(100, 50, 400, 300)
+			update := nk.NkBegin(g.ctx, "Ready?", bounds, nk.WindowTitle|nk.WindowBorder|nk.WindowMovable)
+
+			if update > 0 {
+				nk.NkLayoutRowDynamic(g.ctx, 0, 1)
+				{
+					nk.NkLabel(g.ctx, "Click ready to begin.", nk.TextCentered)
 					if nk.NkButtonLabel(g.ctx, "Ready") > 0 {
 						g.isReady = true
 						LeftClick = false
@@ -166,13 +176,13 @@ func (g *GameScene) Gui() {
 					nk.NkLabel(g.ctx, "Enter your name", nk.TextLeft)
 					nk.NkEditStringZeroTerminated(g.ctx, nk.EditSimple, g.nameText, 11, nk.NkFilterDefault)
 					if nk.NkButtonLabel(g.ctx, "Rename") > 0 {
-						fmt.Println("Sending rename", string(g.nameText[:11]))
-						tanklets.ClientSend(pkt.Join{Name: string(g.nameText[:11])})
+						fmt.Println("Sending rename", strings.TrimRight(string(g.nameText), "\x00"))
+						tanklets.ClientSend(pkt.Join{Name: strings.TrimRight(string(g.nameText), "\x00")})
 					}
 				}
 			}
+			nk.NkEnd(g.ctx)
 		}
-		nk.NkEnd(g.ctx)
 	}
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }

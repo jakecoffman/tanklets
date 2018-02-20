@@ -1,11 +1,12 @@
 package server
 
 import (
-	"github.com/jakecoffman/cp"
 	"fmt"
-	"github.com/jakecoffman/tanklets/pkt"
-	"github.com/jakecoffman/tanklets"
 	"math"
+
+	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/tanklets"
+	"github.com/jakecoffman/tanklets/pkt"
 )
 
 func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
@@ -20,9 +21,20 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 	case *tanklets.Tank:
 		tank := b.UserData.(*tanklets.Tank)
 
-		// Before first bounce, tank can't hit itself
-		if bullet.Bounce < 1 && bullet.PlayerID == tank.ID {
-			return false
+		// prevent bullets that were just fired from destroying the tank that fired it
+		if bullet.PlayerID == tank.ID {
+			if bullet.TimeAlive == 0 && bullet.Bounce == 0 {
+				// this means the turret is too short, just let it go
+				return true
+			}
+			if bullet.TimeAlive < .02 {
+				// prevent player from shooting into a wall and killing themselves at short range
+				// TODO: prevent with a raycast instead
+				bullet.Destroy(false)
+				bullet.Bounce = 100
+				Players.SendAll(bullet.Location())
+				return false
+			}
 		}
 
 		if !tank.Destroyed {
@@ -32,10 +44,8 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 		}
 
 		bullet.Destroy(false)
-
 		bullet.Bounce = 100
-		shot := bullet.Location()
-		Players.SendAll(shot)
+		Players.SendAll(bullet.Location())
 	case *tanklets.Bullet:
 		bullet2 := b.UserData.(*tanklets.Bullet)
 

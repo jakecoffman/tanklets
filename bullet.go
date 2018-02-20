@@ -19,7 +19,7 @@ type Bullet struct {
 	Shape    *cp.Shape
 	Bounce   int
 
-	timeAlive float64
+	TimeAlive float64
 
 	game *Game // back reference only for removing bullets from the list... can this be done elsewhere?
 }
@@ -43,8 +43,8 @@ func (g *Game) NewBullet(firedBy *Tank, id BulletID) *Bullet {
 }
 
 func (bullet *Bullet) Update(dt float64) {
-	bullet.timeAlive += dt
-	if bullet.timeAlive > BulletTTL {
+	bullet.TimeAlive += dt
+	if bullet.TimeAlive > BulletTTL {
 		// don't call Destroy because it fires after the next step
 		delete(bullet.game.Bullets, bullet.ID)
 		bullet.Shape.UserData = nil

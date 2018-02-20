@@ -38,11 +38,15 @@ func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
 
 	fmt.Println("Sending JOIN command")
 	tanklets.ClientSend(pkt.Join{})
+
+	name := fmt.Sprintf("Player %v", Me)
+	nameText := append([]byte(name), make([]byte, 256-len(name))...)
+
 	return &GameScene{
 		window:   w,
 		ctx:      ctx,
 		game:     game,
-		nameText: make([]byte, 256),
+		nameText: nameText,
 	}
 }
 

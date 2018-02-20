@@ -3,6 +3,7 @@ package tanklets
 import (
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/jakecoffman/cp"
 	"github.com/jakecoffman/tanklets/gutils"
@@ -15,8 +16,11 @@ type BoxID = pkt.BoxID
 
 // Game state
 const (
-	GameStateWaiting = iota
-	GameStatePlaying
+	StateWaiting        = iota
+	StateStartCountdown
+	StatePlaying
+	StateWinCountdown
+	StateFailCountdown
 )
 
 // Collision types
@@ -35,6 +39,8 @@ var NotPlayerFilter = cp.ShapeFilter{
 }
 
 type Game struct {
+	Width, Height float64
+
 	Space *cp.Space
 
 	Bullets map[BulletID]*Bullet
@@ -47,6 +53,10 @@ type Game struct {
 
 	State int
 
+	// used for various state things
+	StartTime, EndTime time.Time
+	WinningPlayer string
+
 	CursorPlayerId, CursorColor, CursorBullet *gutils.Cursor
 }
 
@@ -55,6 +65,9 @@ func NewGame(width, height float64) *Game {
 	space := cp.NewSpace()
 
 	game := &Game{
+		Width: width,
+		Height: height,
+
 		Space:   space,
 		Bullets: map[BulletID]*Bullet{},
 		Tanks:   map[PlayerID]*Tank{},
@@ -86,13 +99,13 @@ func NewGame(width, height float64) *Game {
 		fmt.Println("Server making some boxes")
 		w, h := int(width), int(height)
 		boxIdCursor := gutils.NewCursor(0, 1e9)
-		for i := 10; i<h; i += 50 {
+		for i := 10; i < h; i += 50 {
 			box := game.NewBox(BoxID(boxIdCursor.Next()))
-			box.SetPosition(cp.Vector{X: width/2, Y: float64(i)})
+			box.SetPosition(cp.Vector{X: width / 2, Y: float64(i)})
 		}
-		for i := 10; i<w; i += 50 {
+		for i := 10; i < w; i += 50 {
 			box := game.NewBox(BoxID(boxIdCursor.Next()))
-			box.SetPosition(cp.Vector{X: float64(i), Y: height/2})
+			box.SetPosition(cp.Vector{X: float64(i), Y: height / 2})
 		}
 	}
 

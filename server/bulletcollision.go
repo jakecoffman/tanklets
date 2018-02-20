@@ -3,13 +3,14 @@ package server
 import (
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/jakecoffman/cp"
 	"github.com/jakecoffman/tanklets"
 	"github.com/jakecoffman/tanklets/pkt"
 )
 
-func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
+func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, data interface{}) bool {
 	// since bullets don't push around things, this is good to do right away
 	// TODO: power-ups that make bullets non-lethal would be cool
 	arb.Ignore()
@@ -41,6 +42,25 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, _ interface{}) bool {
 			tank.Destroyed = true
 			fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
 			Players.SendAll(pkt.Damage{tank.ID, bullet.PlayerID})
+
+			// check for end game scenarios
+			var tanksAlive []*tanklets.Tank
+			game := data.(*Game)
+			for _, t := range game.Tanks {
+				if !t.Destroyed {
+					tanksAlive = append(tanksAlive, t)
+				}
+			}
+			switch {
+			case len(tanksAlive) == 1:
+				game.EndTime = time.Now()
+				game.State = tanklets.StateWinCountdown
+				Players.SendAll(pkt.State{State: tanklets.StateWinCountdown, ID: tanksAlive[0].ID})
+			case len(tanksAlive) == 0:
+				game.EndTime = time.Now()
+				game.State = tanklets.StateFailCountdown
+				Players.SendAll(pkt.State{State: tanklets.StateFailCountdown})
+			}
 		}
 
 		bullet.Destroy(false)

@@ -38,6 +38,7 @@ func main() {
 	for {
 		game := server.NewGame(800, 600)
 		game.BulletCollisionHandler.PreSolveFunc = server.BulletPreSolve
+		game.BulletCollisionHandler.UserData = game
 
 		fmt.Println("Waiting for players to connect")
 
@@ -57,13 +58,18 @@ func main() {
 				}
 			}
 			if len(game.Tanks) > 0 && allReady {
-				game.State = tanklets.GameStatePlaying
-				server.Players.SendAll(pkt.State{State: tanklets.GameStatePlaying})
+				game.State = tanklets.StateStartCountdown
+				server.Players.SendAll(pkt.State{State: tanklets.StateStartCountdown})
 				break
 			}
 		}
 
 		fmt.Println("Let's do this")
+		// This seems hacky but it works
+		time.Sleep(3*time.Second)
+		game.State = tanklets.StatePlaying
+		server.Players.SendAll(pkt.State{State: tanklets.StatePlaying})
+
 		Loop(game)
 	}
 }

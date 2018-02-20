@@ -113,12 +113,26 @@ func (g *GameScene) Render() {
 
 	SpaceRenderer.FlushRenderer()
 
-	myTank := g.game.Tanks[Me]
-
-	if myTank != nil && myTank.Destroyed {
+	switch g.game.State {
+	case tanklets.StateStartCountdown:
 		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
-		Text.SetColor(1, 0, 0, 1)
-		Text.Print("You died", float32(screenWidth)/2, float32(screenHeight)/2, 2)
+		Text.SetColor(0, 1, 0, 1)
+		diff := time.Now().Sub(g.game.StartTime)
+		if diff < 1 * time.Second {
+			Text.Print("3", float32(screenWidth)/2-10, float32(screenHeight)/2, 3)
+		} else if diff < 2 * time.Second {
+			Text.Print("2", float32(screenWidth)/2-10, float32(screenHeight)/2, 3)
+		} else if diff < 3 * time.Second {
+			Text.Print("1", float32(screenWidth)/2-10, float32(screenHeight)/2, 3)
+		}
+	case tanklets.StateWinCountdown:
+		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
+		Text.SetColor(0, 1, 0, 1)
+		Text.Print(g.game.WinningPlayer + " won", float32(screenWidth)/2-200, float32(screenHeight)/2, 2)
+	case tanklets.StateFailCountdown:
+		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
+		Text.SetColor(0, 1, 0, 1)
+		Text.Print("Everyone's dead.", float32(screenWidth)/2-200, float32(screenHeight)/2, 2)
 	}
 
 	Text.SetProjection(projection)
@@ -153,7 +167,7 @@ func (g *GameScene) Gui() {
 		nk.NkEnd(g.ctx)
 	}
 
-	if g.game.State == tanklets.GameStateWaiting {
+	if g.game.State == tanklets.StateWaiting {
 		if g.isReady {
 			bounds := nk.NkRect(0, 0, 400, 100)
 			update := nk.NkBegin(g.ctx, "Waiting", bounds, nk.WindowTitle|nk.WindowBorder|nk.WindowMovable)
@@ -251,7 +265,7 @@ func (g *GameScene) ProcessInput() {
 		turret = mouseWorld.Sub(Player.Turret.Body.Position())
 	}
 
-	if game.State != tanklets.GameStatePlaying || myTank.Destroyed {
+	if game.State < tanklets.StatePlaying || myTank.Destroyed {
 		return
 	}
 

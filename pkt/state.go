@@ -6,6 +6,7 @@ import (
 
 type State struct {
 	State uint8
+	ID    PlayerID // player that won
 }
 
 func (j State) MarshalBinary() ([]byte, error) {
@@ -22,5 +23,6 @@ func (j *State) Serialize(b []byte) ([]byte, error) {
 	var m uint8 = PacketState
 	stream.Uint8(&m)
 	stream.Uint8(&j.State)
+	stream.Uint16((*uint16)(&j.ID))
 	return stream.Bytes()
 }

@@ -4,6 +4,8 @@ import (
 	"github.com/jakecoffman/tanklets"
 	"fmt"
 	"log"
+	"time"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
 	"github.com/jakecoffman/tanklets/pkt"
@@ -192,6 +194,28 @@ func state(packet tanklets.Packet, game *tanklets.Game) {
 	if _, err := s.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return
+	}
+
+	switch s.State {
+	case tanklets.StateStartCountdown:
+		// start the countdown
+		game.StartTime = time.Now()
+		// this might be a game reset, so clean up some
+		for _, t := range game.Tanks {
+			t.Destroyed = false
+			t.SetVelocityVector(cp.Vector{})
+			t.SetAngularVelocity(0)
+			t.SetAngle(0)
+			t.LastMove = pkt.Move{}
+			t.NextMove = pkt.Move{}
+		}
+	case tanklets.StateWinCountdown:
+		for _, t := range game.Tanks {
+			if t.ID == s.ID {
+				game.WinningPlayer = t.Name
+				break
+			}
+		}
 	}
 
 	game.State = int(s.State)

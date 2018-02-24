@@ -136,7 +136,7 @@ func (g *GameScene) Render() {
 	}
 
 	Text.SetProjection(projection)
-	Text.SetColor(1, 1, 1, 0.5)
+	Text.SetColor(0, 1, 0, 0.5)
 	for _, t := range g.game.Tanks {
 		Text.Print(t.Name, float32(t.Position().X-float64(len(t.Name)*2)), float32(t.Position().Y-20), 0.5)
 	}

@@ -5,7 +5,7 @@ import (
 	"github.com/jakecoffman/tanklets/client/glpers"
 )
 
-//go:generate go-bindata -pkg data -o data/data.go assets/...
+//go:generate go-bindata -ignore \.DS_Store -pkg data -o data/data.go assets/...
 
 var ResourceManager = glpers.NewResourceManager()
 

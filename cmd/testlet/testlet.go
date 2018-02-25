@@ -26,9 +26,9 @@ func main() {
 		return
 	}
 
-	serverCmd := exec.Command("tankserv")
-	serverCmd.Env = os.Environ()
-	start(serverCmd)
+	//serverCmd := exec.Command("tankserv")
+	//serverCmd.Env = os.Environ()
+	//start(serverCmd)
 
 	game1Cmd := exec.Command("tanklets")
 	game1Cmd.Env = os.Environ()
@@ -39,7 +39,7 @@ func main() {
 
 	game1Cmd.Wait()
 	game2Cmd.Wait()
-	serverCmd.Wait()
+	//serverCmd.Wait()
 }
 
 func start(cmd *exec.Cmd) {

@@ -52,6 +52,8 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) Recv() {
+	fmt.Println("Starting server recv")
+	defer fmt.Println("Leaving server recv")
 	var addr *net.UDPAddr
 	var err error
 	var n int

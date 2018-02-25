@@ -4,7 +4,7 @@ import (
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/golang-ui/nuklear/nk"
-
+	"github.com/jakecoffman/tanklets/server"
 	"log"
 	"time"
 )
@@ -22,10 +22,16 @@ type MainMenuScene struct {
 	state    int
 	joinText []byte
 
-	network *Client // may be nil!
+	client *Client // may be nil!
+	server *server.Server // may be nil!
 
 	startedConnecting time.Time
 }
+
+const (
+	defaultJoin = "127.0.0.1:8999"
+	joinTextSize = 256
+)
 
 func NewMainMenuScene(w *glfw.Window, ctx *nk.Context) Scene {
 	// TODO load resources here
@@ -33,31 +39,28 @@ func NewMainMenuScene(w *glfw.Window, ctx *nk.Context) Scene {
 		window:   w,
 		ctx:      ctx,
 		state:    PlayMenu,
-		joinText: make([]byte, joinTextSize),
+		joinText: append([]byte(defaultJoin), make([]byte, joinTextSize-len(defaultJoin))...),
 	}
 }
 
-const joinTextSize = 256
-
 func (m *MainMenuScene) Update(dt float64) {
-	if m.network == nil {
+	if m.client == nil {
 		return
 	}
 
-	if m.network.IsConnected {
+	if m.client.IsConnected {
 		return
 	}
 
 	// handle packets until we're connected
-network:
 	for {
 		select {
-		case incoming := <-m.network.IncomingPackets:
-			ProcessNetwork(incoming, nil, m.network)
-			break network
+		case incoming := <-m.client.IncomingPackets:
+			ProcessNetwork(incoming, nil, m.client)
+			return
 		default:
 			// no data to process this frame
-			break network
+			return
 		}
 	}
 }
@@ -75,15 +78,15 @@ func (m *MainMenuScene) Render() {
 		case PlayJoin:
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				if m.network.IsConnected {
+				if m.client.IsConnected {
 					nk.NkLabel(ctx, "Connected!", nk.TextLeft)
 				} else {
-					if time.Now().Sub(m.startedConnecting) > 2*time.Second {
+					if time.Now().Sub(m.startedConnecting) > 5*time.Second {
 						nk.NkLabel(ctx, "Timed out!", nk.TextLeft)
-						m.network.IsConnecting = false
+						m.client.IsConnecting = false
 					}
 
-					if m.network.IsConnecting {
+					if m.client.IsConnecting {
 						nk.NkLabel(ctx, "Connecting...", nk.TextLeft)
 					}
 				}
@@ -97,32 +100,36 @@ func (m *MainMenuScene) Render() {
 		default:
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				if nk.NkButtonLabel(ctx, "Play Now") > 0 {
+				if nk.NkButtonLabel(ctx, "Host & Join") > 0 {
+					m.server = server.NewServer("0.0.0.0:8999")
+					// TODO a way to stop this loop
+					go m.server.Recv()
+					go server.Loop(m.server)
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
 					// TODO error handling
 					var err error
-					m.network, err = NewClient("127.0.0.1:1234")
+					m.client, err = NewClient("127.0.0.1:8999")
 					if err != nil {
 						log.Println(err)
 					} else {
-						go m.network.Recv()
+						go m.client.Recv()
 					}
 				}
 			}
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				nk.NkLabel(ctx, "Join Custom", nk.TextLeft)
+				nk.NkLabel(ctx, "Join", nk.TextLeft)
 				nk.NkEditStringZeroTerminated(ctx, nk.EditSimple, m.joinText, joinTextSize, nk.NkFilterDefault)
 				if nk.NkButtonLabel(ctx, "Join") > 0 {
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
 					var err error
-					m.network, err = NewClient(string(m.joinText))
+					m.client, err = NewClient(string(m.joinText))
 					if err != nil {
 						log.Println(err)
 					} else {
-						go m.network.Recv()
+						go m.client.Recv()
 					}
 				}
 			}
@@ -134,8 +141,8 @@ func (m *MainMenuScene) Render() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 
-	if m.network != nil && m.network.IsConnected {
-		CurrentScene = NewGameScene(m.window, ctx, m.network)
+	if m.client != nil && m.client.IsConnected {
+		CurrentScene = NewGameScene(m.window, ctx, m.client)
 		m.Destroy()
 	}
 }

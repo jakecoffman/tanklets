@@ -131,7 +131,7 @@ func (g *GameScene) Render() {
 	case tanklets.StateWinCountdown:
 		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
 		Text.SetColor(0, 1, 0, 1)
-		Text.Print(g.game.WinningPlayer + " won", float32(screenWidth)/2-200, float32(screenHeight)/2, 2)
+		Text.Print(g.game.WinningPlayer.Name + " won", float32(screenWidth)/2-200, float32(screenHeight)/2, 2)
 	case tanklets.StateFailCountdown:
 		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
 		Text.SetColor(0, 1, 0, 1)
@@ -149,13 +149,13 @@ func (g *GameScene) Render() {
 
 const (
 	debugW = 180
-	debugH = 140
+	debugH = 110
 )
 
 func (g *GameScene) Gui() {
 	nk.NkPlatformNewFrame()
 
-	if !g.hideDebug {
+	if g.hideDebug {
 		bounds := nk.NkRect(float32(screenWidth)-debugW, 0, debugW, debugH)
 		update := nk.NkBegin(g.ctx, "Debug", bounds, nk.WindowMovable)
 		if update > 0 {
@@ -172,7 +172,7 @@ func (g *GameScene) Gui() {
 
 	if g.game.State == tanklets.StateWaiting {
 		if g.isReady {
-			bounds := nk.NkRect(0, 0, 400, 100)
+			bounds := nk.NkRect(float32(screenWidth)/2-200, float32(screenHeight)/2-50, 400, 100)
 			update := nk.NkBegin(g.ctx, "Waiting", bounds, nk.WindowTitle|nk.WindowBorder|nk.WindowMovable)
 			if update > 0 {
 				nk.NkLayoutRowDynamic(g.ctx, 0, 1)
@@ -205,6 +205,27 @@ func (g *GameScene) Gui() {
 			nk.NkEnd(g.ctx)
 		}
 	}
+
+	if g.game.State != tanklets.StatePlaying {
+		bounds := nk.NkRect(0, 0, 200, 60+float32(30*len(g.game.Tanks)))
+		update := nk.NkBegin(g.ctx, "Score", bounds, nk.WindowTitle|nk.WindowMinimizable)
+		if update > 0 {
+			nk.NkLayoutRowDynamic(g.ctx, 0, 1)
+			names := make([]string, len(g.game.Tanks))
+			for _, p := range g.game.Tanks {
+				if p.Name != "" {
+					names[p.ID-1] = fmt.Sprint(p.Name, " - ", p.Score)
+				} else {
+					names[p.ID-1] = fmt.Sprint("Player ", p.ID, " - ", p.Score)
+				}
+			}
+			for _, n := range names {
+				nk.NkLabel(g.ctx, n, nk.TextLeft)
+			}
+		}
+		nk.NkEnd(g.ctx)
+	}
+
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 }
 

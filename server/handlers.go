@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/jakecoffman/cp"
@@ -81,6 +82,16 @@ func join(packet tanklets.Packet, game *Game) {
 		if j.Name == "" || len(j.Name) > 10 {
 			log.Println("Player sent invalid name")
 			return
+		}
+		if strings.HasPrefix(strings.ToUpper(j.Name), "PLAYER") {
+			log.Println("Player is a reserved prefix")
+			return
+		}
+		for _, t := range game.Tanks {
+			if strings.ToUpper(t.Name) == strings.ToUpper(j.Name) {
+				log.Println("Player tried to name themself the same as another")
+				return
+			}
 		}
 		fmt.Println(tank.Name, "is now", j.Name)
 		tank.Name = j.Name

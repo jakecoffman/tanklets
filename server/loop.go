@@ -31,8 +31,6 @@ func Loop(network *Server) {
 			ProcessNetwork(incoming, game)
 		}
 
-		fmt.Println("GOT DATA")
-
 		allReady := true
 		for _, t := range game.Tanks {
 			if !t.Ready {

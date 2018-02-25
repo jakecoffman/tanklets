@@ -54,7 +54,7 @@ type Game struct {
 
 	// used for various state things
 	StartTime, EndTime time.Time
-	WinningPlayer string
+	WinningPlayer *Tank
 
 	CursorPlayerId, CursorColor, CursorBullet *gutils.Cursor
 }

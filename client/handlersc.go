@@ -209,12 +209,14 @@ func state(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 			t.LastMove = pkt.Move{}
 			t.NextMove = pkt.Move{}
 		}
+		game.WinningPlayer = nil
 	case tanklets.StateWinCountdown:
-		for _, t := range game.Tanks {
-			if t.ID == s.ID {
-				game.WinningPlayer = t.Name
-				break
-			}
+		tank := game.Tanks[s.ID]
+		game.WinningPlayer = tank
+		tank.Score++
+	case tanklets.StateFailCountdown:
+		if game.WinningPlayer != nil {
+			game.WinningPlayer.Score--
 		}
 	}
 

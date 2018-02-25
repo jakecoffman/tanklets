@@ -37,6 +37,7 @@ type Tank struct {
 	width, height float64
 	Color         mgl32.Vec3
 	Name string
+	Score int
 
 	LastShot time.Time
 

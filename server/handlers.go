@@ -59,7 +59,7 @@ func initial(packet tanklets.Packet, game *Game) {
 		fmt.Println("Player", id, "connected", addr)
 	}
 
-	tanklets.ServerSend(initial, addr)
+	game.Network.Send(initial, addr)
 }
 
 var HasHadPlayersConnect bool
@@ -92,7 +92,7 @@ func join(packet tanklets.Packet, game *Game) {
 			} else {
 				j.You = 0
 			}
-			tanklets.ServerSend(j, p)
+			game.Network.Send(j, p)
 		})
 		return
 	}
@@ -107,8 +107,8 @@ func join(packet tanklets.Packet, game *Game) {
 			}
 			// tell this player where all the existing players are
 			thisTank := game.Tanks[id]
-			tanklets.ServerSend(pkt.Join{id, 0, f32.Vec3(thisTank.Color), thisTank.Name}, addr)
-			tanklets.ServerSend(thisTank.Location(), addr)
+			game.Network.Send(pkt.Join{id, 0, f32.Vec3(thisTank.Color), thisTank.Name}, addr)
+			game.Network.Send(thisTank.Location(), addr)
 		})
 		return
 	}
@@ -121,26 +121,26 @@ func join(packet tanklets.Packet, game *Game) {
 
 	// tell this player their ID
 	join := pkt.Join{tank.ID, 1, f32.Vec3(tank.Color), tank.Name}
-	tanklets.ServerSend(join, addr)
+	game.Network.Send(join, addr)
 	loc := tank.Location()
 	// tell this player where they are
-	tanklets.ServerSend(loc, addr)
+	game.Network.Send(loc, addr)
 	join.You = 0
 	Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
 		if id == tank.ID {
 			return
 		}
 		// tell all players about this player
-		tanklets.ServerSend(join, p)
-		tanklets.ServerSend(loc, p)
+		game.Network.Send(join, p)
+		game.Network.Send(loc, p)
 		// tell this player where all the existing players are
 		thisTank := game.Tanks[id]
-		tanklets.ServerSend(pkt.Join{id, 0, f32.Vec3(thisTank.Color), thisTank.Name}, addr)
-		tanklets.ServerSend(thisTank.Location(), addr)
+		game.Network.Send(pkt.Join{id, 0, f32.Vec3(thisTank.Color), thisTank.Name}, addr)
+		game.Network.Send(thisTank.Location(), addr)
 	})
 	// Tell this player about the level
 	for _, box := range game.Boxes {
-		tanklets.ServerSend(box.Location(), addr)
+		game.Network.Send(box.Location(), addr)
 	}
 	game.Tanks[tank.ID] = tank
 	fmt.Println("tank", tank.ID, "joined")
@@ -164,8 +164,9 @@ func disconnect(packet tanklets.Packet, game *Game) {
 	}
 
 	// tell others they left & destroyed
-	Players.SendAll(pkt.Disconnect{ID: uint16(playerID)}, pkt.Damage{ID: playerID, Killer: playerID})
+	Players.SendAll(game.Network, pkt.Disconnect{ID: uint16(playerID)}, pkt.Damage{ID: playerID, Killer: playerID})
 }
+
 func move(packet tanklets.Packet, game *Game) {
 	if game.State < tanklets.StatePlaying {
 		return
@@ -191,6 +192,7 @@ func move(packet tanklets.Packet, game *Game) {
 	tank.NextMove.Throttle = m.Throttle
 	tank.NextMove.TurretAngle = m.TurretAngle
 }
+
 func ready(packet tanklets.Packet, game *Game) {
 	tank := game.Tanks[Lookup[packet.Addr.String()]]
 	if tank != nil {
@@ -198,6 +200,7 @@ func ready(packet tanklets.Packet, game *Game) {
 		tank.Ready = true
 	}
 }
+
 func shoot(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
 	id := Lookup[addr.String()]
@@ -227,5 +230,5 @@ func shoot(packet tanklets.Packet, game *Game) {
 	//bullet.Shape.SetFilter(cp.NewShapeFilter(uint(player.ID), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
 
 	shot := bullet.Location()
-	Players.SendAll(shot)
+	Players.SendAll(game.Network, shot)
 }

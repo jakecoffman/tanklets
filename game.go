@@ -1,7 +1,6 @@
 package tanklets
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -93,20 +92,6 @@ func NewGame(width, height float64) *Game {
 		seg.SetFriction(0)
 		seg.SetFilter(PlayerFilter)
 		game.Walls = append(game.Walls, seg)
-	}
-
-	if IsServer {
-		fmt.Println("Server making some boxes")
-		w, h := int(width), int(height)
-		boxIdCursor := gutils.NewCursor(0, 1e9)
-		for i := 10; i < h; i += 50 {
-			box := game.NewBox(BoxID(boxIdCursor.Next()))
-			box.SetPosition(cp.Vector{X: width / 2, Y: float64(i)})
-		}
-		for i := 10; i < w; i += 50 {
-			box := game.NewBox(BoxID(boxIdCursor.Next()))
-			box.SetPosition(cp.Vector{X: float64(i), Y: height / 2})
-		}
 	}
 
 	game.BulletCollisionHandler = space.NewWildcardCollisionHandler(CollisionTypeBullet)

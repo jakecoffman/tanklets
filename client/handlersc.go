@@ -11,7 +11,7 @@ import (
 	"github.com/jakecoffman/tanklets/pkt"
 )
 
-type packetHandler func(packet tanklets.Packet, game *tanklets.Game)
+type packetHandler func(packet tanklets.Packet, game *tanklets.Game, network *Client)
 
 var handlers [pkt.PacketMax]packetHandler
 
@@ -30,15 +30,15 @@ func init() {
 	handlers[pkt.PacketShoot] = shoot
 }
 
-func ProcessNetwork(packet tanklets.Packet, game *tanklets.Game) {
-	handlers[packet.Bytes[0]](packet, game)
+func ProcessNetwork(packet tanklets.Packet, game *tanklets.Game, network *Client) {
+	handlers[packet.Bytes[0]](packet, game, network)
 }
 
-func noop(packet tanklets.Packet, _ *tanklets.Game) {
+func noop(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	log.Println("Unhandled client packet", packet.Bytes[0])
 }
 
-func initial(packet tanklets.Packet, _ *tanklets.Game) {
+func initial(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	initial := pkt.Initial{}
 	if _, err := initial.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
@@ -47,11 +47,11 @@ func initial(packet tanklets.Packet, _ *tanklets.Game) {
 
 	fmt.Println("I am connected!")
 	Me = tanklets.PlayerID(initial.ID)
-	tanklets.ClientIsConnected = true
-	tanklets.ClientIsConnecting = false
+	network.IsConnected = true
+	network.IsConnecting = false
 }
 
-func join(packet tanklets.Packet, game *tanklets.Game) {
+func join(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	j := pkt.Join{}
 	if _, err := j.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
@@ -76,7 +76,7 @@ func join(packet tanklets.Packet, game *tanklets.Game) {
 	game.Tanks[tank.ID] = tank
 }
 
-func location(packet tanklets.Packet, game *tanklets.Game) {
+func location(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	l := pkt.Location{}
 	if _, err := l.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
@@ -112,7 +112,7 @@ func location(packet tanklets.Packet, game *tanklets.Game) {
 	player.Turret.Body.SetAngle(float64(l.Turret))
 }
 
-func boxlocation(packet tanklets.Packet, game *tanklets.Game) {
+func boxlocation(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	l := pkt.BoxLocation{}
 	if _, err := l.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
@@ -138,7 +138,7 @@ func boxlocation(packet tanklets.Packet, game *tanklets.Game) {
 	box.SetAngle(float64(l.Angle))
 }
 
-func damage(packet tanklets.Packet, game *tanklets.Game) {
+func damage(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	d := pkt.Damage{}
 	if _, err := d.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
@@ -153,7 +153,7 @@ func damage(packet tanklets.Packet, game *tanklets.Game) {
 	tank.Destroyed = true
 }
 
-func disconnect(packet tanklets.Packet, game *tanklets.Game) {
+func disconnect(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	d := pkt.Disconnect{}
 	if _, err := d.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
@@ -163,7 +163,7 @@ func disconnect(packet tanklets.Packet, game *tanklets.Game) {
 	fmt.Println("Client", Me, "-- Player", d.ID, "Has disonnceted")
 }
 
-func shoot(packet tanklets.Packet, game *tanklets.Game) {
+func shoot(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	s := pkt.Shoot{}
 	if _, err := s.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
@@ -189,7 +189,7 @@ func shoot(packet tanklets.Packet, game *tanklets.Game) {
 	bullet.Body.SetVelocity(s.Vx, s.Vy)
 }
 
-func state(packet tanklets.Packet, game *tanklets.Game) {
+func state(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	s := pkt.State{}
 	if _, err := s.Serialize(packet.Bytes); err != nil {
 		log.Println(err)

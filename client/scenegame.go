@@ -23,6 +23,8 @@ type GameScene struct {
 	window *glfw.Window
 	ctx    *nk.Context
 
+	network *Client
+
 	game         *tanklets.Game
 	isReady      bool
 	hideDebug    bool
@@ -31,13 +33,13 @@ type GameScene struct {
 	nameText []byte
 }
 
-func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
+func NewGameScene(w *glfw.Window, ctx *nk.Context, network *Client) Scene {
 	game := tanklets.NewGame(800, 600)
 
 	w.SetMouseButtonCallback(MouseButtonCallback)
 
 	fmt.Println("Sending JOIN command")
-	tanklets.ClientSend(pkt.Join{})
+	network.Send(pkt.Join{})
 
 	name := fmt.Sprintf("Player %v", Me)
 	nameText := append([]byte(name), make([]byte, 256-len(name))...)
@@ -47,6 +49,7 @@ func NewGameScene(w *glfw.Window, ctx *nk.Context) Scene {
 		ctx:      ctx,
 		game:     game,
 		nameText: nameText,
+		network: network,
 	}
 }
 
@@ -69,8 +72,8 @@ func (g *GameScene) Update(dt float64) {
 network:
 	for {
 		select {
-		case incoming := <-tanklets.IncomingPackets:
-			ProcessNetwork(incoming, g.game)
+		case incoming := <-g.network.IncomingPackets:
+			ProcessNetwork(incoming, g.game, g.network)
 		default:
 			// no data to process this frame
 			break network
@@ -160,8 +163,8 @@ func (g *GameScene) Gui() {
 			{
 				nk.NkLabel(g.ctx, fmt.Sprint("ping: ", pkt.MyPing), nk.TextLeft)
 				nk.NkLabel(g.ctx, fmt.Sprint("fps: ", fps), nk.TextLeft)
-				nk.NkLabel(g.ctx, fmt.Sprint("in: ", gutils.Bytes(tanklets.NetworkIn)), nk.TextLeft)
-				nk.NkLabel(g.ctx, fmt.Sprint("out: ", gutils.Bytes(tanklets.NetworkOut)), nk.TextLeft)
+				nk.NkLabel(g.ctx, fmt.Sprint("in: ", gutils.Bytes(g.network.NetworkIn)), nk.TextLeft)
+				nk.NkLabel(g.ctx, fmt.Sprint("out: ", gutils.Bytes(g.network.NetworkOut)), nk.TextLeft)
 			}
 		}
 		nk.NkEnd(g.ctx)
@@ -187,15 +190,15 @@ func (g *GameScene) Gui() {
 					if nk.NkButtonLabel(g.ctx, "Ready") > 0 {
 						g.isReady = true
 						LeftClick = false
-						tanklets.ClientSend(pkt.Ready{})
-						tanklets.ClientSend(pkt.Ready{})
-						tanklets.ClientSend(pkt.Ready{})
+						g.network.Send(pkt.Ready{})
+						g.network.Send(pkt.Ready{})
+						g.network.Send(pkt.Ready{})
 					}
 					nk.NkLabel(g.ctx, "Enter your name", nk.TextLeft)
 					nk.NkEditStringZeroTerminated(g.ctx, nk.EditSimple, g.nameText, 11, nk.NkFilterDefault)
 					if nk.NkButtonLabel(g.ctx, "Rename") > 0 {
 						fmt.Println("Sending rename", strings.TrimRight(string(g.nameText), "\x00"))
-						tanklets.ClientSend(pkt.Join{Name: strings.TrimRight(string(g.nameText), "\x00")})
+						g.network.Send(pkt.Join{Name: strings.TrimRight(string(g.nameText), "\x00")})
 					}
 				}
 			}
@@ -206,12 +209,12 @@ func (g *GameScene) Gui() {
 }
 
 func (g *GameScene) Destroy() {
-	tanklets.ClientSend(pkt.Disconnect{})
-	tanklets.ClientSend(pkt.Disconnect{})
-	tanklets.ClientSend(pkt.Disconnect{})
-	tanklets.ClientSend(pkt.Disconnect{})
-	tanklets.ClientSend(pkt.Disconnect{})
-	tanklets.NetClose()
+	g.network.Send(pkt.Disconnect{})
+	g.network.Send(pkt.Disconnect{})
+	g.network.Send(pkt.Disconnect{})
+	g.network.Send(pkt.Disconnect{})
+	g.network.Send(pkt.Disconnect{})
+	g.network.Close()
 }
 
 func (g *GameScene) ProcessInput() {
@@ -270,7 +273,7 @@ func (g *GameScene) ProcessInput() {
 	}
 
 	if LeftClick {
-		tanklets.ClientSend(pkt.Shoot{})
+		g.network.Send(pkt.Shoot{})
 		Player.LastShot = time.Now()
 	}
 
@@ -279,5 +282,5 @@ func (g *GameScene) ProcessInput() {
 
 	// send all of this input to the server
 	myTank.NextMove = pkt.Move{Turn: turn, Throttle: throttle, TurretAngle: math.Atan2(turret.Y, turret.X)}
-	tanklets.ClientSend(myTank.NextMove)
+	g.network.Send(myTank.NextMove)
 }

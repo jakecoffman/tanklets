@@ -1,12 +1,12 @@
 package server
 
 import (
-	"net"
-	"sync"
 	"encoding"
 	"log"
+	"net"
+	"sync"
+
 	"github.com/jakecoffman/tanklets/pkt"
-	"github.com/jakecoffman/tanklets"
 )
 
 type PlayerID = pkt.PlayerID
@@ -52,7 +52,7 @@ func (p *PlayerLookup) Each(f func (PlayerID, *net.UDPAddr)) {
 	}
 }
 
-func (p *PlayerLookup) SendAll(packets ...encoding.BinaryMarshaler) {
+func (p *PlayerLookup) SendAll(network *Server, packets ...encoding.BinaryMarshaler) {
 	p.RLock()
 	for _, packet := range packets {
 		data, err := packet.MarshalBinary()
@@ -60,7 +60,7 @@ func (p *PlayerLookup) SendAll(packets ...encoding.BinaryMarshaler) {
 			log.Fatal(err)
 		}
 		for _, player := range p.players {
-			tanklets.ServerSendRaw(data, player)
+			network.SendRaw(data, player)
 		}
 	}
 	p.RUnlock()

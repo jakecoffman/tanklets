@@ -1,11 +1,12 @@
 package client
 
 import (
-	"github.com/golang-ui/nuklear/nk"
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/golang-ui/nuklear/nk"
+
+	"log"
 	"time"
-	"github.com/jakecoffman/tanklets"
 )
 
 const (
@@ -20,6 +21,8 @@ type MainMenuScene struct {
 	ctx      *nk.Context
 	state    int
 	joinText []byte
+
+	network *Client // may be nil!
 
 	startedConnecting time.Time
 }
@@ -37,7 +40,11 @@ func NewMainMenuScene(w *glfw.Window, ctx *nk.Context) Scene {
 const joinTextSize = 256
 
 func (m *MainMenuScene) Update(dt float64) {
-	if tanklets.ClientIsConnected {
+	if m.network == nil {
+		return
+	}
+
+	if m.network.IsConnected {
 		return
 	}
 
@@ -45,8 +52,8 @@ func (m *MainMenuScene) Update(dt float64) {
 network:
 	for {
 		select {
-		case incoming := <-tanklets.IncomingPackets:
-			ProcessNetwork(incoming, nil)
+		case incoming := <-m.network.IncomingPackets:
+			ProcessNetwork(incoming, nil, m.network)
 			break network
 		default:
 			// no data to process this frame
@@ -68,15 +75,15 @@ func (m *MainMenuScene) Render() {
 		case PlayJoin:
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				if tanklets.ClientIsConnected {
+				if m.network.IsConnected {
 					nk.NkLabel(ctx, "Connected!", nk.TextLeft)
 				} else {
 					if time.Now().Sub(m.startedConnecting) > 2*time.Second {
 						nk.NkLabel(ctx, "Timed out!", nk.TextLeft)
-						tanklets.ClientIsConnecting = false
+						m.network.IsConnecting = false
 					}
 
-					if tanklets.ClientIsConnecting {
+					if m.network.IsConnecting {
 						nk.NkLabel(ctx, "Connecting...", nk.TextLeft)
 					}
 				}
@@ -93,9 +100,14 @@ func (m *MainMenuScene) Render() {
 				if nk.NkButtonLabel(ctx, "Play Now") > 0 {
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
-					// TODO
-					tanklets.NetInit("127.0.0.1:1234")
-					go Recv()
+					// TODO error handling
+					var err error
+					m.network, err = NewClient("127.0.0.1:1234")
+					if err != nil {
+						log.Println(err)
+					} else {
+						go m.network.Recv()
+					}
 				}
 			}
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
@@ -105,8 +117,13 @@ func (m *MainMenuScene) Render() {
 				if nk.NkButtonLabel(ctx, "Join") > 0 {
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
-					tanklets.NetInit(string(m.joinText))
-					go Recv()
+					var err error
+					m.network, err = NewClient(string(m.joinText))
+					if err != nil {
+						log.Println(err)
+					} else {
+						go m.network.Recv()
+					}
 				}
 			}
 		}
@@ -117,8 +134,8 @@ func (m *MainMenuScene) Render() {
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 	nk.NkPlatformRender(nk.AntiAliasingOn, MaxVertexBuffer, MaxElementBuffer)
 
-	if tanklets.ClientIsConnected {
-		CurrentScene = NewGameScene(m.window, ctx)
+	if m.network != nil && m.network.IsConnected {
+		CurrentScene = NewGameScene(m.window, ctx, m.network)
 		m.Destroy()
 	}
 }

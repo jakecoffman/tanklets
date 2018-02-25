@@ -20,10 +20,9 @@ const (
 func main() {
 	rand.Seed(time.Now().Unix())
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	tanklets.IsServer = true
-	tanklets.NetInit("0.0.0.0:1234")
-	go server.Recv()
-	defer func() { fmt.Println(tanklets.NetClose()) }()
+	network := server.NewServer("0.0.0.0:1234")
+	go network.Recv()
+	defer func() { fmt.Println(network.Close()) }()
 
 	fmt.Println("Server Running")
 
@@ -31,12 +30,12 @@ func main() {
 	go func() {
 		for range pingTick {
 			ping := pkt.Ping{T: time.Now()}
-			server.Players.SendAll(ping)
+			server.Players.SendAll(network, ping)
 		}
 	}()
 
 	for {
-		game := server.NewGame(800, 600)
+		game := server.NewGame(800, 600, network)
 		game.BulletCollisionHandler.PreSolveFunc = server.BulletPreSolve
 		game.BulletCollisionHandler.UserData = game
 
@@ -46,7 +45,7 @@ func main() {
 			// TODO: Move this above game creation, handle clients connecting, wait for people to
 			//       connect from the lobby instead. Once the game starts, then start the countdown.
 			select {
-			case incoming := <-tanklets.IncomingPackets:
+			case incoming := <-network.IncomingPackets:
 				server.ProcessNetwork(incoming, game)
 			}
 
@@ -59,7 +58,7 @@ func main() {
 			}
 			if len(game.Tanks) > 0 && allReady {
 				game.State = tanklets.StateStartCountdown
-				server.Players.SendAll(pkt.State{State: tanklets.StateStartCountdown})
+				server.Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
 				break
 			}
 		}
@@ -68,7 +67,7 @@ func main() {
 		// This seems hacky but it works
 		time.Sleep(3*time.Second)
 		game.State = tanklets.StatePlaying
-		server.Players.SendAll(pkt.State{State: tanklets.StatePlaying})
+		server.Players.SendAll(game.Network, pkt.State{State: tanklets.StatePlaying})
 
 		Loop(game)
 	}
@@ -108,19 +107,19 @@ func Loop(game *server.Game) {
 	inner:
 		for {
 			select {
-			case incoming := <-tanklets.IncomingPackets:
+			case incoming := <-game.Network.IncomingPackets:
 				server.ProcessNetwork(incoming, game)
 			case <-physicsTick:
 				// time to do a physics tick
 				break inner
 			case <-updateTick:
 				for _, tank := range game.Tanks {
-					server.Players.SendAll(tank.Location())
+					server.Players.SendAll(game.Network, tank.Location())
 				}
 				for _, box := range game.Boxes {
 					loc := box.Location()
 					if loc != BoxLocations[box.ID] {
-						server.Players.SendAll(loc)
+						server.Players.SendAll(game.Network, loc)
 						BoxLocations[box.ID] = loc
 					}
 				}

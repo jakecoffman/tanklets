@@ -42,7 +42,7 @@ func NewClient(addr string) (*Client, error) {
 	UdpConn.SetReadBuffer(1048576)
 	client.Send(pkt.Initial{})
 
-	go client.Tick()
+	go client.Tick(nil)
 
 	return client, nil
 }

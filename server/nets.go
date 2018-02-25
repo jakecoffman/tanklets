@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/jakecoffman/tanklets"
+	"github.com/jakecoffman/tanklets/gutils"
 	"github.com/jakecoffman/tanklets/pkt"
 )
 
@@ -32,7 +33,11 @@ func NewServer(addr string) *Server {
 	UdpConn.SetReadBuffer(1048576)
 
 	network := tanklets.NewNet()
-	go network.Tick()
+	go network.Tick(func(){
+		if network.NetworkIn > 0 && network.NetworkOut > 0 {
+			fmt.Println("in :", gutils.Bytes(network.NetworkIn), "out:", gutils.Bytes(network.NetworkOut))
+		}
+	})
 
 	return &Server{
 		Net: network,

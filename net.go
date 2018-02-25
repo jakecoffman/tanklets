@@ -32,7 +32,7 @@ func (n *Net) Close() {
 	n.stop<- struct{}{}
 }
 
-func (n *Net) Tick() {
+func (n *Net) Tick(callback func()) {
 	n.ticker = time.NewTicker(1 * time.Second)
 	defer n.ticker.Stop()
 
@@ -44,9 +44,9 @@ func (n *Net) Tick() {
 			atomic.StoreUint64(&n.InBps, 0)
 			atomic.StoreUint64(&n.OutBps, 0)
 
-			//if IsServer && n.NetworkIn > 0 && n.NetworkOut > 0 {
-			//	fmt.Println("in :", gutils.Bytes(n.NetworkIn), "out:", gutils.Bytes(n.NetworkOut))
-			//}
+			if callback != nil {
+				callback()
+			}
 		case <-n.stop:
 			close(n.stop)
 			return

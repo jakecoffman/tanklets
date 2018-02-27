@@ -119,8 +119,23 @@ func (m *MainMenuScene) Render() {
 			}
 			nk.NkLayoutRowDynamic(ctx, 0, 1)
 			{
-				nk.NkLabel(ctx, "Join", nk.TextLeft)
+				nk.NkLabel(ctx, "Online", nk.TextLeft)
+				if nk.NkButtonLabel(ctx, "Play Now") > 0 {
+					m.state = PlayJoin
+					m.startedConnecting = time.Now()
+					var err error
+					m.client, err = NewClient("tanks.jakecoffman.com:1234")
+					if err != nil {
+						log.Println(err)
+					} else {
+						go m.client.Recv()
+					}
+				}
+				nk.NkLabel(ctx, "Local", nk.TextLeft)
 				nk.NkEditStringZeroTerminated(ctx, nk.EditSimple, m.joinText, joinTextSize, nk.NkFilterDefault)
+			}
+			nk.NkLayoutRowDynamic(ctx, 0, 2)
+			{
 				if nk.NkButtonLabel(ctx, "Join") > 0 {
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
@@ -131,6 +146,9 @@ func (m *MainMenuScene) Render() {
 					} else {
 						go m.client.Recv()
 					}
+				}
+				if nk.NkButtonLabel(ctx, "Clear") > 0 {
+
 				}
 			}
 		}

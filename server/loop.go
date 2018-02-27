@@ -57,7 +57,7 @@ func Loop(network *Server) {
 var BoxLocations = map[tanklets.BoxID]pkt.BoxLocation{}
 
 const (
-	serverUpdates   = time.Second / 10.0
+	serverUpdates   = time.Second / 21.0
 	physicsTicks    = 180.0
 	physicsTickrate = 1.0 / physicsTicks
 )

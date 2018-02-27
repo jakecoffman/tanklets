@@ -31,11 +31,14 @@ func (g *Game) NewBox(id BoxID) *Box {
 	return g.Boxes[id]
 }
 
+var boxSequence uint64
+
 func (b *Box) Location() pkt.BoxLocation {
 	return pkt.BoxLocation{
-		ID:    b.ID,
-		X:     float32(b.Body.Position().X),
-		Y:     float32(b.Body.Position().Y),
-		Angle: float32(b.Body.Angle()),
+		ID:       b.ID,
+		Sequence: boxSequence,
+		X:        float32(b.Body.Position().X),
+		Y:        float32(b.Body.Position().Y),
+		Angle:    float32(b.Body.Angle()),
 	}
 }

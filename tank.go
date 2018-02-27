@@ -36,8 +36,8 @@ type Tank struct {
 
 	width, height float64
 	Color         mgl32.Vec3
-	Name string
-	Score int
+	Name          string
+	Score         int
 
 	LastShot time.Time
 
@@ -58,7 +58,7 @@ type Turret struct {
 func (g *Game) NewTank(id PlayerID, color mgl32.Vec3) *Tank {
 	tank := &Tank{
 		ID:    id,
-		Name: fmt.Sprintf("Player %v", id),
+		Name:  fmt.Sprintf("Player %v", id),
 		Color: color,
 	}
 	tank.Body = g.Space.AddBody(cp.NewBody(1, cp.MomentForBox(1, TankWidth, TankHeight)))
@@ -95,7 +95,7 @@ func (tank *Tank) Update(dt float64) {
 func (tank *Tank) FixedUpdate(dt float64) {
 	if tank.Destroyed {
 		// slowly stop, looks cool
-		tank.ControlBody.SetAngularVelocity(tank.ControlBody.AngularVelocity()*.99)
+		tank.ControlBody.SetAngularVelocity(tank.ControlBody.AngularVelocity() * .99)
 		tank.ControlBody.SetVelocityVector(tank.ControlBody.Velocity().Mult(.99))
 		return
 	}
@@ -118,10 +118,14 @@ func (tank *Tank) FixedUpdate(dt float64) {
 	tank.LastMove = tank.NextMove
 }
 
+var locationSequence uint64
+
 // gather important data to transmit
 func (tank *Tank) Location() *pkt.Location {
+	locationSequence++
 	return &pkt.Location{
 		ID:              tank.ID,
+		Sequence:        locationSequence,
 		X:               float32(tank.Body.Position().X),
 		Y:               float32(tank.Body.Position().Y),
 		Angle:           float32(tank.Body.Angle()),

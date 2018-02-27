@@ -9,7 +9,7 @@ import (
 )
 
 func Loop(network *Server) {
-	pingTick := time.Tick(1*time.Second)
+	pingTick := time.Tick(1 * time.Second)
 	go func() {
 		for range pingTick {
 			ping := pkt.Ping{T: time.Now()}
@@ -47,7 +47,7 @@ func Loop(network *Server) {
 
 	fmt.Println("Let's do this")
 	// This seems hacky but it works
-	time.Sleep(3*time.Second)
+	time.Sleep(3 * time.Second)
 	game.State = tanklets.StatePlaying
 	Players.SendAll(game.Network, pkt.State{State: tanklets.StatePlaying})
 
@@ -57,16 +57,19 @@ func Loop(network *Server) {
 var BoxLocations = map[tanklets.BoxID]pkt.BoxLocation{}
 
 const (
-	serverUpdates   = time.Second / 21.0
+	playerUpdates   = time.Second / 21.0
+	boxUpdates      = time.Second / 5
 	physicsTicks    = 180.0
 	physicsTickrate = 1.0 / physicsTicks
 )
 
 func Play(game *Game) {
 	physicsTick := time.NewTicker(time.Second / physicsTicks)
-	updateTick := time.NewTicker(serverUpdates)
+	updateTick := time.NewTicker(playerUpdates)
+	boxTick := time.NewTicker(boxUpdates)
 	defer physicsTick.Stop()
 	defer updateTick.Stop()
+	defer boxTick.Stop()
 
 	var accumulator float64
 	var dt time.Duration
@@ -106,6 +109,7 @@ func Play(game *Game) {
 				for _, tank := range game.Tanks {
 					Players.SendAll(game.Network, tank.Location())
 				}
+			case <-boxTick.C:
 				for _, box := range game.Boxes {
 					loc := box.Location()
 					if loc != BoxLocations[box.ID] {

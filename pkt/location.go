@@ -6,10 +6,12 @@ import (
 
 // message sent to clients: update location information
 type Location struct {
-	ID                     PlayerID
-	X, Y                   float32
-	Vx, Vy                 float32
-	Angle, AngularVelocity float32
+	ID              PlayerID
+	Sequence        uint64
+	X, Y            float32
+	Vx, Vy          float32
+	Angle           float32
+	AngularVelocity float32
 
 	Turret float32
 }
@@ -28,6 +30,7 @@ func (l *Location) Serialize(b []byte) ([]byte, error) {
 	var m uint8 = PacketLocation
 	stream.Uint8(&m)
 	stream.Uint16((*uint16)(&l.ID))
+	stream.Uint64(&l.Sequence)
 	stream.Float32(&l.X)
 	stream.Float32(&l.Y)
 	stream.Float32(&l.Vx)

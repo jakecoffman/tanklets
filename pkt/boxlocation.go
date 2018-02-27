@@ -6,9 +6,10 @@ import (
 
 // message sent to clients: update location information
 type BoxLocation struct {
-	ID                     BoxID
-	X, Y                   float32
-	Angle float32
+	ID       BoxID
+	Sequence uint64
+	X, Y     float32
+	Angle    float32
 }
 
 func (l BoxLocation) MarshalBinary() ([]byte, error) {
@@ -25,6 +26,7 @@ func (l *BoxLocation) Serialize(b []byte) ([]byte, error) {
 	var m uint8 = PacketBoxLocation
 	stream.Uint8(&m)
 	stream.Uint16((*uint16)(&l.ID))
+	stream.Uint64(&l.Sequence)
 	stream.Float32(&l.X)
 	stream.Float32(&l.Y)
 	stream.Float32(&l.Angle)

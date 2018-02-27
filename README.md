@@ -8,7 +8,4 @@ This is a multiplayer tank game I am making using Go. No game engine, just [Go b
 1. Download `bins.zip`
 1. Extract it
 1. Run `tanklets.exe` (windows) or `tanklets.app` (mac)
-1. Click Host & Join to start a game
-
-To Have your friends join your game, you'll need to send them your IP address, and make a router rule to route to your PC.
-In the future there will be dedicated servers to join, hopefully.
+1. Click Host & Join to start a LAN game, or Play Now to try your luck online

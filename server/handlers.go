@@ -29,6 +29,7 @@ func init() {
 	handlers[pkt.PacketMove] = move
 	handlers[pkt.PacketReady] = ready
 	handlers[pkt.PacketShoot] = shoot
+	handlers[pkt.PacketPing] = ping
 }
 
 func ProcessNetwork(packet tanklets.Packet, game *Game) {
@@ -242,4 +243,20 @@ func shoot(packet tanklets.Packet, game *Game) {
 
 	shot := bullet.Location()
 	Players.SendAll(game.Network, shot)
+}
+
+func ping(packet tanklets.Packet, game *Game) {
+	addr := packet.Addr
+	id := Lookup[addr.String()]
+	player := Players.Get(id)
+	if player == nil {
+		log.Println("Player not found", addr.String(), Lookup[addr.String()])
+		return
+	}
+	tank := game.Tanks[id]
+	if tank == nil {
+		log.Println("Timing issue?")
+		return
+	}
+	tank.TimeOfLastPing = time.Now()
 }

@@ -44,7 +44,7 @@ type Tank struct {
 	Destroyed bool
 
 	NextMove, LastMove pkt.Move
-	Ping               time.Duration // tank ping in ns
+	TimeOfLastPing     time.Time
 	Ready              bool
 }
 

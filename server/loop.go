@@ -9,11 +9,22 @@ import (
 )
 
 func Loop(network *Server) {
-	pingTick := time.Tick(1 * time.Second)
+	pingTick := time.NewTicker(1 * time.Second)
+	timeoutTick := time.NewTicker(5 * time.Second)
+	defer pingTick.Stop()
+	defer timeoutTick.Stop()
+
+	done := make(chan struct{})
+	defer func(){done<-struct{}{}}()
 	go func() {
-		for range pingTick {
-			ping := pkt.Ping{T: time.Now()}
-			Players.SendAll(network, ping)
+		for {
+			select {
+			case <-pingTick.C:
+				Players.SendAll(network, pkt.Ping{T: time.Now()})
+			case <-done:
+				close(done)
+				return
+			}
 		}
 	}()
 
@@ -24,11 +35,23 @@ func Loop(network *Server) {
 	fmt.Println("Waiting for players to connect")
 
 	for {
+	lobby:
 		// TODO: Move this above game creation, handle clients connecting, wait for people to
 		//       connect from the lobby instead. Once the game starts, then start the countdown.
 		select {
 		case incoming := <-network.IncomingPackets:
 			ProcessNetwork(incoming, game)
+		case <-timeoutTick.C:
+			for id, tank := range game.Tanks {
+				if time.Now().Sub(tank.TimeOfLastPing) > 10 * time.Second {
+					delete(game.Tanks, id)
+					Players.Delete(id)
+					if len(game.Tanks) == 0 {
+						return
+					}
+				}
+			}
+			goto lobby
 		}
 
 		allReady := true
@@ -42,6 +65,14 @@ func Loop(network *Server) {
 			game.State = tanklets.StateStartCountdown
 			Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
 			break
+		}
+	}
+
+	// one last scrub of disconnected players
+	for id, tank := range game.Tanks {
+		if time.Now().Sub(tank.TimeOfLastPing) > 10 * time.Second {
+			delete(game.Tanks, id)
+			Players.Delete(id)
 		}
 	}
 

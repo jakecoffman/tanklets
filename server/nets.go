@@ -9,7 +9,6 @@ import (
 
 	"github.com/jakecoffman/tanklets"
 	"github.com/jakecoffman/tanklets/gutils"
-	"github.com/jakecoffman/tanklets/pkt"
 )
 
 type Server struct {
@@ -65,19 +64,6 @@ func (s *Server) Recv() {
 			return
 		}
 		atomic.AddUint64(&s.InBps, uint64(n))
-
-		// handle certain things right now:
-		switch data[0] {
-		case pkt.PacketPing:
-			ping := &pkt.Ping{}
-			_, err := ping.Serialize(data)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			// TODO
-			continue
-		}
 
 		s.IncomingPackets <- tanklets.Packet{data, addr}
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
 	"log"
+	"sort"
 	"time"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"math"
@@ -211,16 +212,19 @@ func (g *GameScene) Gui() {
 		update := nk.NkBegin(g.ctx, "Score", bounds, nk.WindowTitle|nk.WindowMinimizable)
 		if update > 0 {
 			nk.NkLayoutRowDynamic(g.ctx, 0, 1)
-			names := make([]string, len(g.game.Tanks))
-			for _, p := range g.game.Tanks {
-				if p.Name != "" {
-					names[p.ID-1] = fmt.Sprint(p.Name, " - ", p.Score)
-				} else {
-					names[p.ID-1] = fmt.Sprint("Player ", p.ID, " - ", p.Score)
-				}
+			tanks := make([]*tanklets.Tank, 0, len(g.game.Tanks))
+			for _, t := range g.game.Tanks {
+				tanks = append(tanks, t)
 			}
-			for _, n := range names {
-				nk.NkLabel(g.ctx, n, nk.TextLeft)
+			sort.Slice(tanks, func(i, j int) bool {
+				return tanks[i].ID < tanks[j].ID
+			})
+			for _, t := range tanks {
+				if t.Name != "" {
+					nk.NkLabel(g.ctx, fmt.Sprint(t.Name, " - ", t.Score), nk.TextLeft)
+				} else {
+					nk.NkLabel(g.ctx, fmt.Sprint("Player ", t.ID, " - ", t.Score), nk.TextLeft)
+				}
 			}
 		}
 		nk.NkEnd(g.ctx)

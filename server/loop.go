@@ -64,6 +64,8 @@ func Loop(network *Server) {
 		if len(game.Tanks) > 0 && allReady {
 			game.State = tanklets.StateStartCountdown
 			Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
+			Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
+			Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
 			break
 		}
 	}

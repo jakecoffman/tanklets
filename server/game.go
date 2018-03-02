@@ -45,11 +45,15 @@ func (g *Game) Update(dt float64) {
 		if time.Now().Sub(g.StartTime) > 3*time.Second {
 			g.Game.State = tanklets.StatePlaying
 			Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
+			Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
+			Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
 		}
 	case g.Game.State > tanklets.StatePlaying:
 		if time.Now().Sub(g.EndTime) > 3*time.Second {
 			g.Game.State = tanklets.StateStartCountdown
 			g.Game.StartTime = time.Now()
+			Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
+			Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
 			Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
 			g.Restart()
 		}

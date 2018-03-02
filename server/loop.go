@@ -8,7 +8,7 @@ import (
 	"github.com/jakecoffman/tanklets/pkt"
 )
 
-func Loop(network *Server) {
+func Lobby(network *Server) {
 	pingTick := time.NewTicker(1 * time.Second)
 	timeoutTick := time.NewTicker(5 * time.Second)
 	defer pingTick.Stop()

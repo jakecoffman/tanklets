@@ -25,7 +25,5 @@ func main() {
 
 	fmt.Println("Server Running on", port)
 
-	for {
-		server.Loop(network)
-	}
+	server.Lobby(network)
 }

@@ -104,7 +104,7 @@ func (m *MainMenuScene) Render() {
 					m.server = server.NewServer("0.0.0.0:8999")
 					// TODO a way to stop this loop
 					go m.server.Recv()
-					go server.Loop(m.server)
+					go server.Lobby(m.server)
 					m.state = PlayJoin
 					m.startedConnecting = time.Now()
 					// TODO error handling

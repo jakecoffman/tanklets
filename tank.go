@@ -100,17 +100,17 @@ func (tank *Tank) FixedUpdate(dt float64) {
 		return
 	}
 
-	m := tank.NextMove
-	if !(m.Turn == 0 && tank.LastMove.Turn == 0) {
-		tank.ControlBody.SetAngularVelocity(float64(m.Turn) * TurnSpeed)
+	move := tank.NextMove
+	if move.Turn != 0 && tank.LastMove.Turn != 0 {
+		tank.ControlBody.SetAngularVelocity(float64(move.Turn) * TurnSpeed)
 	}
 
-	if !(m.Throttle == 0 && tank.LastMove.Throttle == 0) {
-		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(m.Throttle) * MaxSpeed}))
+	if move.Throttle != 0 && tank.LastMove.Throttle != 0 {
+		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(move.Throttle) * MaxSpeed}))
 	}
 
-	x := math.Cos(m.TurretAngle)
-	y := math.Sin(m.TurretAngle)
+	x := math.Cos(move.TurretAngle)
+	y := math.Sin(move.TurretAngle)
 	angle := tank.Turret.Rotation().Unrotate(cp.Vector{x, y}).ToAngle()
 	tank.Turret.SetAngle(tank.Turret.Angle() - angle)
 	tank.Turret.SetPosition(tank.Body.Position())

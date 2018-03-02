@@ -103,7 +103,7 @@ func location(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	distance := diff.Length()
 
 	// https://gafferongames.com/post/networked_physics_2004/
-	if distance > 4 {
+	if distance > 6 {
 		player.SetPosition(newPos)
 	} else {
 		player.SetPosition(pos.Add(diff.Mult(0.1)))

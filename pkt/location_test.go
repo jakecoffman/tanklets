@@ -18,7 +18,8 @@ func Benchmark_LocationSerialize(b *testing.B) {
 	}
 
 	// saves time by allocating the correct size up front
-	buffer := make([]byte, 0, 31)
+	buffer, _ := location.Serialize(nil)
+	buffer = buffer[:]
 
 	for n := 0; n < b.N; n++ {
 		location.Serialize(buffer)

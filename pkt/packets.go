@@ -8,6 +8,7 @@ const (
 	PacketDisconnect
 	PacketMove
 	PacketShoot
+	PacketBulletUpdate
 	PacketLocation
 	PacketBoxLocation
 	PacketDamage

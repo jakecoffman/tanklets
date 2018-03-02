@@ -94,8 +94,8 @@ func (bullet *Bullet) Destroy(now bool) {
 	}, nil, nil)
 }
 
-func (bullet *Bullet) Location() *pkt.Shoot {
-	return &pkt.Shoot{
+func (bullet *Bullet) Location() *pkt.BulletUpdate {
+	return &pkt.BulletUpdate{
 		BulletID:        bullet.ID,
 		PlayerID:        bullet.PlayerID,
 		Bounce:          int16(bullet.Bounce),

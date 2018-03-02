@@ -1,13 +1,12 @@
 package tanklets
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
-	"math"
 	"github.com/jakecoffman/tanklets/pkt"
-	"fmt"
 )
 
 // default tank attributes (power-ups could change them!)
@@ -109,10 +108,6 @@ func (tank *Tank) FixedUpdate(dt float64) {
 		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(move.Throttle) * MaxSpeed}))
 	}
 
-	x := math.Cos(move.TurretAngle)
-	y := math.Sin(move.TurretAngle)
-	angle := tank.Turret.Rotation().Unrotate(cp.Vector{x, y}).ToAngle()
-	tank.Turret.SetAngle(tank.Turret.Angle() - angle)
 	tank.Turret.SetPosition(tank.Body.Position())
 
 	tank.LastMove = tank.NextMove

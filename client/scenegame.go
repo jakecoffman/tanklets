@@ -297,8 +297,11 @@ func (g *GameScene) ProcessInput() {
 		return
 	}
 
+	turretAngle := math.Atan2(turret.Y, turret.X)
+	angle := Player.Turret.Rotation().Unrotate(turret).ToAngle()
+	Player.Turret.SetAngle(Player.Turret.Angle() - angle)
 	if LeftClick {
-		g.network.Send(pkt.Shoot{})
+		g.network.Send(pkt.Shoot{Angle: Player.Turret.Angle()})
 		Player.LastShot = time.Now()
 	}
 
@@ -306,6 +309,6 @@ func (g *GameScene) ProcessInput() {
 	LeftDown = false
 
 	// send all of this input to the server
-	myTank.NextMove = pkt.Move{Turn: turn, Throttle: throttle, TurretAngle: math.Atan2(turret.Y, turret.X)}
+	myTank.NextMove = pkt.Move{Turn: turn, Throttle: throttle, TurretAngle: turretAngle}
 	g.network.Send(myTank.NextMove)
 }

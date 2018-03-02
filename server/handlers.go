@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"net"
 	"strings"
@@ -98,7 +99,7 @@ func join(packet tanklets.Packet, game *Game) {
 		tank.Name = j.Name
 		j.ID = tank.ID
 		j.Color = f32.Vec3(tank.Color)
-		Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
+		Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
 			if tank.ID == id {
 				j.You = 1
 			} else {
@@ -113,7 +114,7 @@ func join(packet tanklets.Packet, game *Game) {
 	Players.Put(playerId, addr)
 
 	if game.State != tanklets.StateWaiting {
-		Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
+		Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
 			if id == playerId {
 				return
 			}
@@ -138,7 +139,7 @@ func join(packet tanklets.Packet, game *Game) {
 	// tell this player where they are
 	game.Network.Send(loc, addr)
 	join.You = 0
-	Players.Each(func (id tanklets.PlayerID, p *net.UDPAddr) {
+	Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
 		if id == tank.ID {
 			return
 		}
@@ -232,17 +233,23 @@ func shoot(packet tanklets.Packet, game *Game) {
 	}
 	tank.LastShot = time.Now()
 
+	shot := pkt.Shoot{}
+	_, err := shot.Serialize(packet.Bytes)
+	if err != nil {
+		log.Println("Shoot packet is bad", err)
+		return
+	}
+
 	bullet := game.NewBullet(tank, tanklets.BulletID(game.CursorBullet.Next()))
 
 	pos := cp.Vector{X: tanklets.TankHeight / 2.0}
-	pos = pos.Rotate(tank.Turret.Rotation())
+	pos = pos.Rotate(cp.Vector{X: math.Cos(shot.Angle), Y: math.Sin(shot.Angle)})
 	bullet.Body.SetPosition(pos.Add(tank.Turret.Position()))
-	bullet.Body.SetAngle(tank.Turret.Angle())
+	bullet.Body.SetAngle(shot.Angle)
 	bullet.Body.SetVelocityVector(bullet.Body.Rotation().Rotate(cp.Vector{tanklets.BulletSpeed, 0}))
 	//bullet.Shape.SetFilter(cp.NewShapeFilter(uint(player.ID), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
 
-	shot := bullet.Location()
-	Players.SendAll(game.Network, shot)
+	Players.SendAll(game.Network, bullet.Location())
 }
 
 func ping(packet tanklets.Packet, game *Game) {

@@ -27,7 +27,7 @@ func init() {
 	handlers[pkt.PacketDisconnect] = disconnect
 	handlers[pkt.PacketBoxLocation] = boxlocation
 	handlers[pkt.PacketDamage] = damage
-	handlers[pkt.PacketShoot] = shoot
+	handlers[pkt.PacketBulletUpdate] = bulletUpdate
 }
 
 func ProcessNetwork(packet tanklets.Packet, game *tanklets.Game, network *Client) {
@@ -117,7 +117,9 @@ func location(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	player.ControlBody.SetVelocityVector(player.Velocity())
 	player.SetAngularVelocity(float64(l.AngularVelocity))
 	player.ControlBody.SetAngularVelocity(player.AngularVelocity())
-	player.Turret.Body.SetAngle(float64(l.Turret))
+	if Me != l.ID {
+		player.Turret.Body.SetAngle(float64(l.Turret))
+	}
 }
 
 var lastBoxSeq uint64
@@ -178,8 +180,8 @@ func disconnect(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	fmt.Println("Client", Me, "-- Player", d.ID, "Has disonnceted")
 }
 
-func shoot(packet tanklets.Packet, game *tanklets.Game, network *Client) {
-	s := pkt.Shoot{}
+func bulletUpdate(packet tanklets.Packet, game *tanklets.Game, network *Client) {
+	s := pkt.BulletUpdate{}
 	if _, err := s.Serialize(packet.Bytes); err != nil {
 		log.Println(err)
 		return

@@ -43,7 +43,7 @@ func Lobby(network *Server) {
 			ProcessNetwork(incoming, game)
 		case <-timeoutTick.C:
 			for id, tank := range game.Tanks {
-				if time.Now().Sub(tank.TimeOfLastPing) > 10 * time.Second {
+				if time.Now().Sub(tank.LastPkt) > 10 * time.Second {
 					delete(game.Tanks, id)
 					Players.Delete(id)
 					if len(game.Tanks) == 0 {
@@ -72,7 +72,7 @@ func Lobby(network *Server) {
 
 	// one last scrub of disconnected players
 	for id, tank := range game.Tanks {
-		if time.Now().Sub(tank.TimeOfLastPing) > 10 * time.Second {
+		if time.Now().Sub(tank.LastPkt) > 10 * time.Second {
 			delete(game.Tanks, id)
 			Players.Delete(id)
 		}

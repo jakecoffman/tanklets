@@ -75,6 +75,7 @@ func join(packet tanklets.Packet, game *Game) {
 	fmt.Println("Processing JOIN")
 
 	if tank != nil {
+		tank.LastPkt = time.Now()
 		// they are already here, so this is a rejoin or name change
 		j := pkt.Join{}
 		if _, err := j.Serialize(packet.Bytes); err != nil {
@@ -127,6 +128,7 @@ func join(packet tanklets.Packet, game *Game) {
 	}
 
 	tank = game.NewTank(playerId, pkt.GetColor(game.CursorColor.Next()))
+	tank.LastPkt = time.Now()
 	tank.SetPosition(cp.Vector{
 		X: 10 + float64(rand.Intn(int(game.Width)-20)),
 		Y: 10 + float64(rand.Intn(int(game.Height)-20)),
@@ -265,5 +267,5 @@ func ping(packet tanklets.Packet, game *Game) {
 		log.Println("Timing issue?")
 		return
 	}
-	tank.TimeOfLastPing = time.Now()
+	tank.LastPkt = time.Now()
 }

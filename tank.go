@@ -101,11 +101,11 @@ func (tank *Tank) FixedUpdate(dt float64) {
 	}
 
 	move := tank.NextMove
-	if move.Turn != 0 && tank.LastMove.Turn != 0 {
+	if !(move.Turn == 0 && tank.LastMove.Turn == 0) {
 		tank.ControlBody.SetAngularVelocity(float64(move.Turn) * TurnSpeed)
 	}
 
-	if move.Throttle != 0 && tank.LastMove.Throttle != 0 {
+	if !(move.Throttle == 0 && tank.LastMove.Throttle == 0) {
 		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(move.Throttle) * MaxSpeed}))
 	}
 

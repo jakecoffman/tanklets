@@ -20,7 +20,7 @@ func Lobby(network *Server) {
 		for {
 			select {
 			case <-pingTick.C:
-				Players.SendAll(network, pkt.Ping{T: time.Now()})
+				network.Players.SendAll(network, pkt.Ping{T: time.Now()})
 			case <-done:
 				close(done)
 				return
@@ -45,7 +45,7 @@ func Lobby(network *Server) {
 			for id, tank := range game.Tanks {
 				if time.Now().Sub(tank.LastPkt) > 10 * time.Second {
 					delete(game.Tanks, id)
-					Players.Delete(id)
+					network.Players.Delete(id)
 					if len(game.Tanks) == 0 {
 						return
 					}
@@ -63,9 +63,9 @@ func Lobby(network *Server) {
 		}
 		if len(game.Tanks) > 0 && allReady {
 			game.State = tanklets.StateStartCountdown
-			Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
-			Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
-			Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
+			network.Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
+			network.Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
+			network.Players.SendAll(game.Network, pkt.State{State: tanklets.StateStartCountdown})
 			break
 		}
 	}
@@ -74,7 +74,7 @@ func Lobby(network *Server) {
 	for id, tank := range game.Tanks {
 		if time.Now().Sub(tank.LastPkt) > 10 * time.Second {
 			delete(game.Tanks, id)
-			Players.Delete(id)
+			network.Players.Delete(id)
 		}
 	}
 
@@ -82,7 +82,7 @@ func Lobby(network *Server) {
 	// This seems hacky but it works
 	time.Sleep(3 * time.Second)
 	game.State = tanklets.StatePlaying
-	Players.SendAll(game.Network, pkt.State{State: tanklets.StatePlaying})
+	network.Players.SendAll(game.Network, pkt.State{State: tanklets.StatePlaying})
 
 	Play(game)
 }
@@ -123,7 +123,7 @@ func Play(game *Game) {
 		}
 		game.Update(dt.Seconds())
 
-		if Players.Len() == 0 && HasHadPlayersConnect {
+		if game.Network.Players.Len() == 0 && HasHadPlayersConnect {
 			fmt.Println("All players have disconnected, shutting down")
 			HasHadPlayersConnect = false
 			return
@@ -140,13 +140,13 @@ func Play(game *Game) {
 				break inner
 			case <-updateTick.C:
 				for _, tank := range game.Tanks {
-					Players.SendAll(game.Network, tank.Location())
+					game.Network.Players.SendAll(game.Network, tank.Location())
 				}
 			case <-boxTick.C:
 				for _, box := range game.Boxes {
 					loc := box.Location()
 					if loc != BoxLocations[box.ID] {
-						Players.SendAll(game.Network, loc)
+						game.Network.Players.SendAll(game.Network, loc)
 						BoxLocations[box.ID] = loc
 					}
 				}

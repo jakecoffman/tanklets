@@ -44,17 +44,17 @@ func (g *Game) Update(dt float64) {
 	case g.Game.State == tanklets.StateStartCountdown:
 		if time.Now().Sub(g.StartTime) > 3*time.Second {
 			g.Game.State = tanklets.StatePlaying
-			Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
-			Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
-			Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
+			g.Network.Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
+			g.Network.Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
+			g.Network.Players.SendAll(g.Network, pkt.State{State: tanklets.StatePlaying})
 		}
 	case g.Game.State > tanklets.StatePlaying:
 		if time.Now().Sub(g.EndTime) > 3*time.Second {
 			g.Game.State = tanklets.StateStartCountdown
 			g.Game.StartTime = time.Now()
-			Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
-			Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
-			Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
+			g.Network.Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
+			g.Network.Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
+			g.Network.Players.SendAll(g.Network, pkt.State{State: tanklets.StateStartCountdown})
 			g.Restart()
 		}
 	}
@@ -71,7 +71,7 @@ func (g *Game) Restart() {
 		t.SetAngularVelocity(0)
 		t.SetAngle(0)
 		t.NextMove = pkt.Move{}
-		Players.SendAll(g.Network, t.Location())
+		g.Network.Players.SendAll(g.Network, t.Location())
 	}
 	w, h := int(g.Width), int(g.Height)
 	var positions []cp.Vector
@@ -86,11 +86,11 @@ func (g *Game) Restart() {
 		b.SetAngle(0)
 		b.SetAngularVelocity(0)
 		b.SetVelocityVector(cp.Vector{})
-		Players.SendAll(g.Network, b.Location())
+		g.Network.Players.SendAll(g.Network, b.Location())
 	}
 	for _, b := range g.Bullets {
 		b.Bounce = 100
-		Players.SendAll(g.Network, b.Location())
+		g.Network.Players.SendAll(g.Network, b.Location())
 		b.Destroy(true)
 	}
 }

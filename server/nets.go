@@ -15,6 +15,7 @@ type Server struct {
 	*tanklets.Net
 	ServerAddr *net.UDPAddr
 	UdpConn *net.UDPConn
+	Players PlayerLookup
 }
 
 func NewServer(addr string) *Server {
@@ -42,6 +43,10 @@ func NewServer(addr string) *Server {
 		Net: network,
 		ServerAddr: ServerAddr,
 		UdpConn: UdpConn,
+		Players: PlayerLookup{
+			players: map[PlayerID]*net.UDPAddr{},
+			lookup:  map[string]PlayerID{},
+		},
 	}
 }
 

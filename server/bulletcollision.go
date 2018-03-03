@@ -35,7 +35,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, data interface{}) bool {
 				// TODO: prevent with a raycast instead
 				bullet.Destroy(false)
 				bullet.Bounce = 100
-				Players.SendAll(game.Network, bullet.Location())
+				game.Network.Players.SendAll(game.Network, bullet.Location())
 				return false
 			}
 		}
@@ -43,7 +43,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, data interface{}) bool {
 		if !tank.Destroyed {
 			tank.Destroyed = true
 			fmt.Println("Tank", tank.ID, "destroyed by Tank", bullet.PlayerID, "bullet", bullet.ID)
-			Players.SendAll(game.Network, pkt.Damage{tank.ID, bullet.PlayerID})
+			game.Network.Players.SendAll(game.Network, pkt.Damage{tank.ID, bullet.PlayerID})
 
 			// check for end game scenarios
 			var tanksAlive []*tanklets.Tank
@@ -56,17 +56,17 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, data interface{}) bool {
 			case len(tanksAlive) == 1:
 				game.EndTime = time.Now()
 				game.State = tanklets.StateWinCountdown
-				Players.SendAll(game.Network, pkt.State{State: tanklets.StateWinCountdown, ID: tanksAlive[0].ID})
+				game.Network.Players.SendAll(game.Network, pkt.State{State: tanklets.StateWinCountdown, ID: tanksAlive[0].ID})
 			case len(tanksAlive) == 0:
 				game.EndTime = time.Now()
 				game.State = tanklets.StateFailCountdown
-				Players.SendAll(game.Network, pkt.State{State: tanklets.StateFailCountdown})
+				game.Network.Players.SendAll(game.Network, pkt.State{State: tanklets.StateFailCountdown})
 			}
 		}
 
 		bullet.Destroy(false)
 		bullet.Bounce = 100
-		Players.SendAll(game.Network, bullet.Location())
+		game.Network.Players.SendAll(game.Network, bullet.Location())
 	case *tanklets.Bullet:
 		bullet2 := b.UserData.(*tanklets.Bullet)
 
@@ -78,7 +78,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, data interface{}) bool {
 
 		shot1 := bullet.Location()
 		shot2 := bullet2.Location()
-		Players.SendAll(game.Network, shot1, shot2)
+		game.Network.Players.SendAll(game.Network, shot1, shot2)
 	default:
 		// This will bounce over anything that isn't a tank or bullet, probably check for wall here?
 
@@ -96,7 +96,7 @@ func BulletPreSolve(arb *cp.Arbiter, _ *cp.Space, data interface{}) bool {
 		}
 
 		shot := bullet.Location()
-		Players.SendAll(game.Network, shot)
+		game.Network.Players.SendAll(game.Network, shot)
 	}
 	return false
 }

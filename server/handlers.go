@@ -49,7 +49,7 @@ func initial(packet tanklets.Packet, game *Game) {
 		log.Println(err)
 		return
 	}
-	id, ok := Players.Lookup(addr.String())
+	id, ok := game.Network.Players.Lookup(addr.String())
 
 	if ok {
 		initial.ID = id
@@ -57,7 +57,7 @@ func initial(packet tanklets.Packet, game *Game) {
 	} else {
 		id = tanklets.PlayerID(game.CursorPlayerId.Next())
 		initial.ID = id
-		Players.Put(id, addr)
+		game.Network.Players.Put(id, addr)
 		fmt.Println("Player", id, "connected", addr)
 	}
 
@@ -68,7 +68,7 @@ var HasHadPlayersConnect bool
 
 func join(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
-	playerId, _ := Players.Lookup(addr.String())
+	playerId, _ := game.Network.Players.Lookup(addr.String())
 	tank := game.Tanks[playerId]
 
 	fmt.Println("Processing JOIN")
@@ -99,7 +99,7 @@ func join(packet tanklets.Packet, game *Game) {
 		tank.Name = j.Name
 		j.ID = tank.ID
 		j.Color = f32.Vec3(tank.Color)
-		Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
+		game.Network.Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
 			if tank.ID == id {
 				j.You = 1
 			} else {
@@ -110,10 +110,10 @@ func join(packet tanklets.Packet, game *Game) {
 		return
 	}
 
-	Players.Put(playerId, addr)
+	game.Network.Players.Put(playerId, addr)
 
 	if game.State != tanklets.StateWaiting {
-		Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
+		game.Network.Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
 			if id == playerId {
 				return
 			}
@@ -139,7 +139,7 @@ func join(packet tanklets.Packet, game *Game) {
 	// tell this player where they are
 	game.Network.Send(loc, addr)
 	join.You = 0
-	Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
+	game.Network.Players.Each(func(id tanklets.PlayerID, p *net.UDPAddr) {
 		if id == tank.ID {
 			return
 		}
@@ -163,20 +163,20 @@ func join(packet tanklets.Packet, game *Game) {
 func disconnect(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
 
-	playerID, _ := Players.Lookup(addr.String())
-	player := Players.Get(playerID)
+	playerID, _ := game.Network.Players.Lookup(addr.String())
+	player := game.Network.Players.Get(playerID)
 	if player == nil {
 		// this is normal, we spam disconnect when leaving to ensure the server gets it
 		return
 	}
 
-	Players.Delete(playerID)
+	game.Network.Players.Delete(playerID)
 	if game.Tanks[playerID] != nil {
 		game.Tanks[playerID].Destroyed = true
 	}
 
 	// tell others they left & destroyed
-	Players.SendAll(game.Network, pkt.Disconnect{ID: uint16(playerID)}, pkt.Damage{ID: playerID, Killer: playerID})
+	game.Network.Players.SendAll(game.Network, pkt.Disconnect{ID: uint16(playerID)}, pkt.Damage{ID: playerID, Killer: playerID})
 }
 
 func move(packet tanklets.Packet, game *Game) {
@@ -191,7 +191,7 @@ func move(packet tanklets.Packet, game *Game) {
 	}
 	addr := packet.Addr
 
-	id, _ := Players.Lookup(addr.String())
+	id, _ := game.Network.Players.Lookup(addr.String())
 	tank := game.Tanks[id]
 	if tank == nil {
 		log.Println("Player not found", addr.String(), id)
@@ -213,7 +213,7 @@ func move(packet tanklets.Packet, game *Game) {
 }
 
 func ready(packet tanklets.Packet, game *Game) {
-	id, _ := Players.Lookup(packet.Addr.String())
+	id, _ := game.Network.Players.Lookup(packet.Addr.String())
 	tank := game.Tanks[id]
 	if tank != nil {
 		fmt.Println("Got a ready from", tank.ID)
@@ -223,8 +223,8 @@ func ready(packet tanklets.Packet, game *Game) {
 
 func shoot(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
-	id, _ := Players.Lookup(addr.String())
-	player := Players.Get(id)
+	id, _ := game.Network.Players.Lookup(addr.String())
+	player := game.Network.Players.Get(id)
 	if player == nil {
 		log.Println("Player not found", addr.String(), id)
 		return
@@ -256,13 +256,13 @@ func shoot(packet tanklets.Packet, game *Game) {
 	bullet.Body.SetVelocityVector(bullet.Body.Rotation().Rotate(cp.Vector{tanklets.BulletSpeed, 0}))
 	//bullet.Shape.SetFilter(cp.NewShapeFilter(uint(player.ID), cp.ALL_CATEGORIES, cp.ALL_CATEGORIES))
 
-	Players.SendAll(game.Network, bullet.Location())
+	game.Network.Players.SendAll(game.Network, bullet.Location())
 }
 
 func ping(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
-	id, _ := Players.Lookup(addr.String())
-	player := Players.Get(id)
+	id, _ := game.Network.Players.Lookup(addr.String())
+	player := game.Network.Players.Get(id)
 	if player == nil {
 		log.Println("Player not found", addr.String(), id)
 		return

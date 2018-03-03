@@ -18,12 +18,6 @@ type PlayerLookup struct {
 	lookup map[string]PlayerID
 }
 
-// Lookup a address with a player ID
-var Players = PlayerLookup{
-	players: map[PlayerID]*net.UDPAddr{},
-	lookup: map[string]PlayerID{},
-}
-
 func (p *PlayerLookup) Get(id PlayerID) *net.UDPAddr {
 	p.RLock()
 	defer p.RUnlock()

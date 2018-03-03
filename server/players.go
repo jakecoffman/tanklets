@@ -15,10 +15,14 @@ type PlayerID = pkt.PlayerID
 type PlayerLookup struct {
 	sync.RWMutex
 	players map[PlayerID]*net.UDPAddr
+	lookup map[string]PlayerID
 }
 
 // Lookup a address with a player ID
-var Players = PlayerLookup{players: map[PlayerID]*net.UDPAddr{}}
+var Players = PlayerLookup{
+	players: map[PlayerID]*net.UDPAddr{},
+	lookup: map[string]PlayerID{},
+}
 
 func (p *PlayerLookup) Get(id PlayerID) *net.UDPAddr {
 	p.RLock()
@@ -26,15 +30,25 @@ func (p *PlayerLookup) Get(id PlayerID) *net.UDPAddr {
 	return p.players[id]
 }
 
+func (p *PlayerLookup) Lookup(addr string) (PlayerID, bool) {
+	p.RLock()
+	defer p.RUnlock()
+	id, ok := p.lookup[addr]
+	return id, ok
+}
+
 func (p *PlayerLookup) Put(id PlayerID, addr *net.UDPAddr) {
 	p.Lock()
 	p.players[id] = addr
+	p.lookup[addr.String()] = id
 	p.Unlock()
 }
 
 func (p *PlayerLookup) Delete(id PlayerID) {
 	p.Lock()
+	addr := p.players[id]
 	delete(p.players, id)
+	delete(p.lookup, addr.String())
 	p.Unlock()
 }
 
@@ -65,6 +79,3 @@ func (p *PlayerLookup) SendAll(network *Server, packets ...encoding.BinaryMarsha
 	}
 	p.RUnlock()
 }
-
-// Lookup a PlayerID with an address string
-var Lookup = map[string]PlayerID{}

@@ -49,7 +49,7 @@ func initial(packet tanklets.Packet, game *Game) {
 		log.Println(err)
 		return
 	}
-	id, ok := Lookup[addr.String()]
+	id, ok := Players.Lookup(addr.String())
 
 	if ok {
 		initial.ID = id
@@ -57,7 +57,6 @@ func initial(packet tanklets.Packet, game *Game) {
 	} else {
 		id = tanklets.PlayerID(game.CursorPlayerId.Next())
 		initial.ID = id
-		Lookup[addr.String()] = id
 		Players.Put(id, addr)
 		fmt.Println("Player", id, "connected", addr)
 	}
@@ -69,7 +68,7 @@ var HasHadPlayersConnect bool
 
 func join(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
-	playerId := Lookup[addr.String()]
+	playerId, _ := Players.Lookup(addr.String())
 	tank := game.Tanks[playerId]
 
 	fmt.Println("Processing JOIN")
@@ -111,7 +110,6 @@ func join(packet tanklets.Packet, game *Game) {
 		return
 	}
 
-	Lookup[addr.String()] = playerId
 	Players.Put(playerId, addr)
 
 	if game.State != tanklets.StateWaiting {
@@ -165,7 +163,7 @@ func join(packet tanklets.Packet, game *Game) {
 func disconnect(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
 
-	playerID := Lookup[addr.String()]
+	playerID, _ := Players.Lookup(addr.String())
 	player := Players.Get(playerID)
 	if player == nil {
 		// this is normal, we spam disconnect when leaving to ensure the server gets it
@@ -173,7 +171,6 @@ func disconnect(packet tanklets.Packet, game *Game) {
 	}
 
 	Players.Delete(playerID)
-	delete(Lookup, addr.String())
 	if game.Tanks[playerID] != nil {
 		game.Tanks[playerID].Destroyed = true
 	}
@@ -194,9 +191,10 @@ func move(packet tanklets.Packet, game *Game) {
 	}
 	addr := packet.Addr
 
-	tank := game.Tanks[Lookup[addr.String()]]
+	id, _ := Players.Lookup(addr.String())
+	tank := game.Tanks[id]
 	if tank == nil {
-		log.Println("Player not found", addr.String(), Lookup[addr.String()])
+		log.Println("Player not found", addr.String(), id)
 		return
 	}
 	if tank.Destroyed {
@@ -215,7 +213,8 @@ func move(packet tanklets.Packet, game *Game) {
 }
 
 func ready(packet tanklets.Packet, game *Game) {
-	tank := game.Tanks[Lookup[packet.Addr.String()]]
+	id, _ := Players.Lookup(packet.Addr.String())
+	tank := game.Tanks[id]
 	if tank != nil {
 		fmt.Println("Got a ready from", tank.ID)
 		tank.Ready = true
@@ -224,10 +223,10 @@ func ready(packet tanklets.Packet, game *Game) {
 
 func shoot(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
-	id := Lookup[addr.String()]
+	id, _ := Players.Lookup(addr.String())
 	player := Players.Get(id)
 	if player == nil {
-		log.Println("Player not found", addr.String(), Lookup[addr.String()])
+		log.Println("Player not found", addr.String(), id)
 		return
 	}
 	tank := game.Tanks[id]
@@ -262,10 +261,10 @@ func shoot(packet tanklets.Packet, game *Game) {
 
 func ping(packet tanklets.Packet, game *Game) {
 	addr := packet.Addr
-	id := Lookup[addr.String()]
+	id, _ := Players.Lookup(addr.String())
 	player := Players.Get(id)
 	if player == nil {
-		log.Println("Player not found", addr.String(), Lookup[addr.String()])
+		log.Println("Player not found", addr.String(), id)
 		return
 	}
 	tank := game.Tanks[id]

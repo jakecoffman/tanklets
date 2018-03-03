@@ -101,7 +101,8 @@ func (c *Client) Send(handler encoding.BinaryMarshaler) {
 func (c *Client) SendRaw(data []byte) {
 	n, err := c.UdpConn.Write(data)
 	if err != nil {
-		panic(err)
+		log.Println(err)
+		c.IsConnected = false
 		return
 	}
 	atomic.AddUint64(&c.OutBps, uint64(n))

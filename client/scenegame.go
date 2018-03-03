@@ -59,6 +59,12 @@ var accumulator = 0.
 const physicsTickrate = 1.0 / 180.0
 
 func (g *GameScene) Update(dt float64) {
+	if !g.network.IsConnected {
+		CurrentScene = NewMainMenuScene(g.window, g.ctx)
+		g.Destroy()
+		return
+	}
+
 	accumulator += dt
 	for accumulator >= physicsTickrate {
 		myTank := g.game.Tanks[Me]
@@ -298,10 +304,9 @@ func (g *GameScene) ProcessInput() {
 	}
 
 	turretAngle := math.Atan2(turret.Y, turret.X)
-	angle := Player.Turret.Rotation().Unrotate(turret).ToAngle()
-	Player.Turret.SetAngle(Player.Turret.Angle() - angle)
+	angle := Player.Turret.Angle() - Player.Turret.Rotation().Unrotate(turret).ToAngle()
 	if LeftClick {
-		g.network.Send(pkt.Shoot{Angle: Player.Turret.Angle()})
+		g.network.Send(pkt.Shoot{Angle: angle})
 		Player.LastShot = time.Now()
 	}
 

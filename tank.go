@@ -109,6 +109,7 @@ func (tank *Tank) FixedUpdate(dt float64) {
 	}
 
 	tank.Turret.SetPosition(tank.Body.Position())
+	tank.Turret.SetAngle(tank.NextMove.TurretAngle)
 
 	tank.LastMove = tank.NextMove
 }

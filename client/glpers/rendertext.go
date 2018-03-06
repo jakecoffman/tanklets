@@ -9,9 +9,9 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
+	"github.com/jakecoffman/tanklets/client/data"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
-	"github.com/jakecoffman/tanklets/client/data"
 )
 
 type TextRenderer struct {
@@ -30,13 +30,13 @@ type character struct {
 	bearingV  int    //glyph bearing vertical
 }
 
-func NewTextRenderer(shader *Shader, width, height float32, fontPath string) *TextRenderer {
+func NewTextRenderer(shader *Shader, width, height float32, fontPath string, scale uint32) *TextRenderer {
 	shader.Use().SetMat4("projection", mgl32.Ortho2D(0, width, height, 0)).SetInt("text", 0)
 
 	t := &TextRenderer{
 		shader: shader,
 	}
-	if err := t.Load(fontPath, 24); err != nil {
+	if err := t.Load(fontPath, scale); err != nil {
 		panic(err)
 	}
 
@@ -149,31 +149,31 @@ func (t *TextRenderer) Load(fontPath string, scale uint32) error {
 }
 
 //SetColor allows you to set the text color to be used when you draw the text
-func (f *TextRenderer) SetColor(red float32, green float32, blue float32, alpha float32) {
-	f.shader.Use().SetVec4f("textColor", mgl32.Vec4{red, green, blue, alpha})
+func (t *TextRenderer) SetColor(red float32, green float32, blue float32, alpha float32) {
+	t.shader.Use().SetVec4f("textColor", mgl32.Vec4{red, green, blue, alpha})
 }
 
 //Printf draws a string to the screen, takes a list of arguments like printf
-func (f *TextRenderer) Print(text string, x, y float32, scale float32) error {
+func (t *TextRenderer) Print(text string, x, y float32, scale float32) error {
 	indices := []rune(text)
 	if len(indices) == 0 {
 		return nil
 	}
-	f.shader.Use()
+	t.shader.Use()
 
 	lowChar := rune(32)
 
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindVertexArray(f.vao)
+	gl.BindVertexArray(t.vao)
 
 	for i := range indices {
 		runeIndex := indices[i]
 
-		if int(runeIndex)-int(lowChar) > len(f.fontChar) || runeIndex < lowChar {
+		if int(runeIndex)-int(lowChar) > len(t.fontChar) || runeIndex < lowChar {
 			continue
 		}
 
-		ch := f.fontChar[runeIndex-lowChar]
+		ch := t.fontChar[runeIndex-lowChar]
 
 		xpos := x + float32(ch.bearingH)*scale
 		ypos := y - float32(ch.height-ch.bearingV)*scale
@@ -190,7 +190,7 @@ func (f *TextRenderer) Print(text string, x, y float32, scale float32) error {
 		}
 
 		gl.BindTexture(gl.TEXTURE_2D, ch.textureID)
-		gl.BindBuffer(gl.ARRAY_BUFFER, f.vbo)
+		gl.BindBuffer(gl.ARRAY_BUFFER, t.vbo)
 		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(vertices)*4, gl.Ptr(vertices))
 
 		gl.BindBuffer(gl.ARRAY_BUFFER, 0)

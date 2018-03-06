@@ -34,7 +34,7 @@ func InitResources() {
 	// renderers
 	w, h := float32(screenWidth), float32(screenHeight)
 	projection = mgl32.Ortho2D(0, w, h, 0)
-	Text = glpers.NewTextRenderer(ResourceManager.Shader("text"), w, h, "Roboto-Light.ttf")
+	Text = glpers.NewTextRenderer(ResourceManager.Shader("text"), w, h, "Roboto-Light.ttf", 96)
 	Text.SetColor(.8, .8, .3, 1)
 	Simple = glpers.NewSimpleRenderer(ResourceManager.Shader("simple"), projection)
 	Renderer = glpers.NewSpriteRenderer(ResourceManager.Shader("sprite"), projection)

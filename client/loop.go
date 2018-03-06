@@ -42,8 +42,8 @@ func Loop() {
 		window.SetPos(0, 0)
 	}
 	window.MakeContextCurrent()
-	window.SetKeyCallback(keyCallback)
-	window.SetFramebufferSizeCallback(framebufferSizeCallback)
+	window.SetKeyCallback(KeyCallback)
+	window.SetFramebufferSizeCallback(FramebufferSizeCallback)
 	window.SetSizeCallback(windowSizeCallback)
 	window.SetCursorPosCallback(CursorCallback)
 	glfw.SwapInterval(1)
@@ -90,7 +90,7 @@ func Loop() {
 	runtime.KeepAlive(font)
 }
 
-func framebufferSizeCallback(w *glfw.Window, width int, height int) {
+func FramebufferSizeCallback(w *glfw.Window, width int, height int) {
 	gl.Viewport(0, 0, int32(width), int32(height))
 }
 

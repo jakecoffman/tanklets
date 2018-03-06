@@ -38,7 +38,7 @@ func MouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Ac
 	}
 }
 
-func keyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+func KeyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if key == glfw.KeyEscape && action == glfw.Press {
 		window.SetShouldClose(true)
 	}

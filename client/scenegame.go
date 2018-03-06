@@ -123,32 +123,32 @@ func (g *GameScene) Render() {
 
 	SpaceRenderer.FlushRenderer()
 
+	Text.SetProjection(projection)
+	Text.SetColor(1, 0, 1, 0.5)
+	for _, t := range g.game.Tanks {
+		Text.Print(t.Name, float32(t.Position().X-float64(len(t.Name)*5)), float32(t.Position().Y-20), 0.2)
+	}
+
 	switch g.game.State {
 	case tanklets.StateStartCountdown:
 		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
 		Text.SetColor(0, 1, 0, 1)
 		diff := time.Now().Sub(g.game.StartTime)
 		if diff < 1 * time.Second {
-			Text.Print("3", float32(screenWidth)/2-10, float32(screenHeight)/2, 3)
+			Text.Print("3", float32(screenWidth)/2-10, float32(screenHeight)/2, 1)
 		} else if diff < 2 * time.Second {
-			Text.Print("2", float32(screenWidth)/2-10, float32(screenHeight)/2, 3)
+			Text.Print("2", float32(screenWidth)/2-10, float32(screenHeight)/2, 1)
 		} else if diff < 3 * time.Second {
-			Text.Print("1", float32(screenWidth)/2-10, float32(screenHeight)/2, 3)
+			Text.Print("1", float32(screenWidth)/2-10, float32(screenHeight)/2, 1)
 		}
 	case tanklets.StateWinCountdown:
 		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
 		Text.SetColor(0, 1, 0, 1)
-		Text.Print(g.game.WinningPlayer.Name + " won", float32(screenWidth)/2-200, float32(screenHeight)/2, 2)
+		Text.Print(g.game.WinningPlayer.Name + " won", float32(screenWidth)/2-200, float32(screenHeight)/2, .5)
 	case tanklets.StateFailCountdown:
 		Text.SetProjection(mgl32.Ortho2D(0, float32(screenWidth), float32(screenHeight), 0))
 		Text.SetColor(0, 1, 0, 1)
-		Text.Print("Everyone's dead.", float32(screenWidth)/2-200, float32(screenHeight)/2, 2)
-	}
-
-	Text.SetProjection(projection)
-	Text.SetColor(0, 1, 0, 0.5)
-	for _, t := range g.game.Tanks {
-		Text.Print(t.Name, float32(t.Position().X-float64(len(t.Name)*2)), float32(t.Position().Y-20), 0.5)
+		Text.Print("Everyone's dead.", float32(screenWidth)/2-200, float32(screenHeight)/2, .5)
 	}
 
 	g.Gui()

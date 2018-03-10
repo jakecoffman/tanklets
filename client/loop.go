@@ -1,12 +1,13 @@
 package client
 
 import (
-	"os"
-	"strconv"
 	"log"
-	"github.com/go-gl/glfw/v3.2/glfw"
-	"github.com/go-gl/gl/v3.2-core/gl"
+	"os"
 	"runtime"
+	"strconv"
+
+	"github.com/go-gl/gl/v3.2-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 var (
@@ -56,7 +57,7 @@ func Loop() {
 
 	dt := 0.
 	lastFrame := 0.
-	startFrame := glfw.GetTime()
+	lastFps := 0.
 	frames := 0
 
 	ctx, font := GuiInit(window)
@@ -71,18 +72,17 @@ func Loop() {
 		currentFrame = glfw.GetTime()
 		dt = currentFrame - lastFrame
 		lastFrame = currentFrame
+		frames++
+		if currentFrame - lastFps >= 1 {
+			fps = frames
+			frames = 0
+			lastFps += 1
+		}
 
 		CurrentScene.Update(dt)
 		CurrentScene.Render()
 
 		window.SwapBuffers()
-
-		frames++
-		if frames > 60 {
-			fps = int(float64(frames)/(currentFrame-startFrame))
-			frames = 0
-			startFrame = currentFrame
-		}
 	}
 
 	CurrentScene.Destroy()

@@ -2,6 +2,7 @@ package tanklets
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -43,8 +44,10 @@ type Tank struct {
 	Destroyed bool
 
 	NextMove, LastMove pkt.Move
-	LastPkt            time.Time
-	Ready              bool
+
+	Aim     float32
+	LastPkt time.Time
+	Ready   bool
 }
 
 type Turret struct {
@@ -99,17 +102,26 @@ func (tank *Tank) FixedUpdate(dt float64) {
 		return
 	}
 
+	// client side prediction
 	move := tank.NextMove
 	if !(move.Turn == 0 && tank.LastMove.Turn == 0) {
 		tank.ControlBody.SetAngularVelocity(float64(move.Turn) * TurnSpeed)
 	}
-
 	if !(move.Throttle == 0 && tank.LastMove.Throttle == 0) {
 		tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(move.Throttle) * MaxSpeed}))
 	}
 
+	// TODO move location stuffs here
+
+	// smooth turret stuff
 	tank.Turret.SetPosition(tank.Body.Position())
-	tank.Turret.SetAngle(tank.NextMove.TurretAngle)
+	angle := float64(tank.Aim)
+	diff := tank.Turret.Body.Angle() - angle
+	if math.Abs(diff) > 1 {
+		tank.Turret.Body.SetAngle(angle)
+	} else {
+		tank.Turret.Body.SetAngle(tank.Turret.Body.Angle() - diff * .1)
+	}
 
 	tank.LastMove = tank.NextMove
 }

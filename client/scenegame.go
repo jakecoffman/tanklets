@@ -80,11 +80,9 @@ network:
 
 	accumulator += dt
 	for accumulator >= physicsTickrate {
-		myTank := g.game.Tanks[Me]
-		if myTank == nil {
-			break
+		for _, tank := range g.game.Tanks {
+			tank.FixedUpdate(physicsTickrate)
 		}
-		myTank.FixedUpdate(physicsTickrate)
 		g.game.Space.Step(physicsTickrate)
 		accumulator -= physicsTickrate
 	}
@@ -313,7 +311,14 @@ func (g *GameScene) ProcessInput() {
 	RightDown = false
 	LeftDown = false
 
-	// send all of this input to the server
-	myTank.NextMove = pkt.Move{Turn: turn, Throttle: throttle, TurretAngle: turretAngle}
-	g.network.Send(myTank.NextMove)
+	nextMove := pkt.Move{Turn: turn, Throttle: throttle}
+	if nextMove != myTank.NextMove {
+		myTank.NextMove = nextMove
+		g.network.Send(myTank.NextMove)
+	}
+	aim := pkt.Aim{TurretAngle: float32(turretAngle)}
+	if math.Abs(float64(aim.TurretAngle - myTank.Aim)) > 0.001 {
+		myTank.Aim = aim.TurretAngle
+		g.network.Send(aim)
+	}
 }

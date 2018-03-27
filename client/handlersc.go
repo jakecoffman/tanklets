@@ -118,7 +118,7 @@ func location(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	player.SetAngularVelocity(float64(l.AngularVelocity))
 	player.ControlBody.SetAngularVelocity(player.AngularVelocity())
 	if Me != l.ID {
-		player.Turret.Body.SetAngle(float64(l.Turret))
+		player.Aim = l.Turret
 	}
 }
 

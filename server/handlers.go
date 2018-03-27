@@ -28,6 +28,7 @@ func init() {
 	handlers[pkt.PacketJoin] = join
 	handlers[pkt.PacketDisconnect] = disconnect
 	handlers[pkt.PacketMove] = move
+	handlers[pkt.PacketAim] = aim
 	handlers[pkt.PacketReady] = ready
 	handlers[pkt.PacketShoot] = shoot
 	handlers[pkt.PacketPing] = ping
@@ -203,13 +204,37 @@ func move(packet tanklets.Packet, game *Game) {
 
 	tank.NextMove.Turn = m.Turn
 	tank.NextMove.Throttle = m.Throttle
-	tank.NextMove.TurretAngle = m.TurretAngle
 
 	tank.ControlBody.SetAngularVelocity(float64(m.Turn) * tanklets.TurnSpeed)
 	tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(m.Throttle) * tanklets.MaxSpeed}))
 
 	tank.Turret.SetPosition(tank.Body.Position())
-	tank.Turret.SetAngle(m.TurretAngle)
+}
+
+func aim(packet tanklets.Packet, game *Game) {
+	if game.State < tanklets.StatePlaying {
+		return
+	}
+
+	a := pkt.Aim{}
+	if _, err := a.Serialize(packet.Bytes); err != nil {
+		log.Println(err)
+		return
+	}
+	addr := packet.Addr
+
+	id, _ := game.Network.Players.Lookup(addr.String())
+	tank := game.Tanks[id]
+	if tank == nil {
+		log.Println("Player not found", addr.String(), id)
+		return
+	}
+	if tank.Destroyed {
+		return
+	}
+
+	tank.Aim = a.TurretAngle
+	tank.Turret.SetAngle(float64(a.TurretAngle))
 }
 
 func ready(packet tanklets.Packet, game *Game) {

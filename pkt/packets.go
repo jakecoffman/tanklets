@@ -13,6 +13,7 @@ const (
 	PacketBoxLocation
 	PacketDamage
 	PacketPing
+	PacketAim
 	PacketMax
 )
 

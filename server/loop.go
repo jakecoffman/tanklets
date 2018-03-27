@@ -90,25 +90,33 @@ func Lobby(network *Server) {
 var BoxLocations = map[tanklets.BoxID]pkt.BoxLocation{}
 
 const (
-	playerUpdates   = time.Second / 21.0
+	playerUpdates   = time.Second / 10.0
 	boxUpdates      = time.Second / 5
 	physicsTicks    = 180.0
 	physicsTickrate = 1.0 / physicsTicks
 )
 
 func Play(game *Game) {
-	physicsTick := time.NewTicker(time.Second / physicsTicks)
-	updateTick := time.NewTicker(playerUpdates)
-	boxTick := time.NewTicker(boxUpdates)
-	defer physicsTick.Stop()
-	defer updateTick.Stop()
-	defer boxTick.Stop()
+	ticker := time.NewTicker(time.Second / physicsTicks)
+	defer ticker.Stop()
+
+	var lastUpdateTick, lastBoxTick time.Time
 
 	var accumulator float64
 	var dt time.Duration
 	lastFrame := time.Now()
 
 	for {
+	netloop:
+		for {
+			select {
+			case incoming := <-game.Network.IncomingPackets:
+				ProcessNetwork(incoming, game)
+			case <-ticker.C:
+				break netloop
+			}
+		}
+
 		currentFrame := time.Now()
 		dt = currentFrame.Sub(lastFrame)
 		lastFrame = currentFrame
@@ -129,26 +137,20 @@ func Play(game *Game) {
 			return
 		}
 
-		// handle all incoming messages this frame
-	inner:
-		for {
-			select {
-			case incoming := <-game.Network.IncomingPackets:
-				ProcessNetwork(incoming, game)
-			case <-physicsTick.C:
-				// time to do a physics tick
-				break inner
-			case <-updateTick.C:
-				for _, tank := range game.Tanks {
-					game.Network.Players.SendAll(game.Network, tank.Location())
-				}
-			case <-boxTick.C:
-				for _, box := range game.Boxes {
-					loc := box.Location()
-					if loc != BoxLocations[box.ID] {
-						game.Network.Players.SendAll(game.Network, loc)
-						BoxLocations[box.ID] = loc
-					}
+		if currentFrame.Sub(lastUpdateTick) >= playerUpdates {
+			lastUpdateTick = currentFrame
+			for _, tank := range game.Tanks {
+				game.Network.Players.SendAll(game.Network, tank.Location())
+			}
+		}
+
+		if currentFrame.Sub(lastBoxTick) >= boxUpdates {
+			lastBoxTick = currentFrame
+			for _, box := range game.Boxes {
+				loc := box.Location()
+				if loc != BoxLocations[box.ID] {
+					game.Network.Players.SendAll(game.Network, loc)
+					BoxLocations[box.ID] = loc
 				}
 			}
 		}

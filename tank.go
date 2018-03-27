@@ -117,9 +117,9 @@ func (tank *Tank) FixedUpdate(dt float64) {
 var locationSequence uint64
 
 // gather important data to transmit
-func (tank *Tank) Location() *pkt.Location {
+func (tank *Tank) Location() pkt.Location {
 	locationSequence++
-	return &pkt.Location{
+	return pkt.Location{
 		ID:              tank.ID,
 		Sequence:        locationSequence,
 		X:               float32(tank.Body.Position().X),

@@ -65,17 +65,6 @@ func (g *GameScene) Update(dt float64) {
 		return
 	}
 
-	accumulator += dt
-	for accumulator >= physicsTickrate {
-		myTank := g.game.Tanks[Me]
-		if myTank == nil {
-			break
-		}
-		myTank.FixedUpdate(physicsTickrate)
-		g.game.Space.Step(physicsTickrate)
-		accumulator -= physicsTickrate
-	}
-
 network:
 	for {
 		select {
@@ -88,6 +77,17 @@ network:
 	}
 	g.ProcessInput()
 	g.game.Update(dt)
+
+	accumulator += dt
+	for accumulator >= physicsTickrate {
+		myTank := g.game.Tanks[Me]
+		if myTank == nil {
+			break
+		}
+		myTank.FixedUpdate(physicsTickrate)
+		g.game.Space.Step(physicsTickrate)
+		accumulator -= physicsTickrate
+	}
 }
 
 func (g *GameScene) Render() {

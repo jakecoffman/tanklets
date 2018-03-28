@@ -124,7 +124,7 @@ func Play(game *Game) {
 
 		if accumulator >= physicsTickrate {
 			for _, tank := range game.Tanks {
-				tank.FixedUpdate(physicsTickrate)
+				tank.FixedUpdate()
 			}
 			game.Space.Step(physicsTickrate)
 			accumulator -= physicsTickrate

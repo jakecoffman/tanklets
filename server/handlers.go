@@ -204,11 +204,6 @@ func move(packet tanklets.Packet, game *Game) {
 
 	tank.NextMove.Turn = m.Turn
 	tank.NextMove.Throttle = m.Throttle
-
-	tank.ControlBody.SetAngularVelocity(float64(m.Turn) * tanklets.TurnSpeed)
-	tank.ControlBody.SetVelocityVector(tank.Body.Rotation().Rotate(cp.Vector{Y: float64(m.Throttle) * tanklets.MaxSpeed}))
-
-	tank.Turret.SetPosition(tank.Body.Position())
 }
 
 func aim(packet tanklets.Packet, game *Game) {

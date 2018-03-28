@@ -1,20 +1,21 @@
 package client
 
 import (
-	"github.com/jakecoffman/tanklets"
 	"fmt"
-	"github.com/go-gl/gl/v3.2-core/gl"
-	"github.com/golang-ui/nuklear/nk"
-	"github.com/go-gl/mathgl/mgl32"
-	"github.com/jakecoffman/cp"
 	"log"
-	"sort"
-	"time"
-	"github.com/go-gl/glfw/v3.2/glfw"
 	"math"
+	"sort"
+	"strings"
+	"time"
+
+	"github.com/go-gl/gl/v3.2-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/golang-ui/nuklear/nk"
+	"github.com/jakecoffman/cp"
+	"github.com/jakecoffman/tanklets"
 	"github.com/jakecoffman/tanklets/gutils"
 	"github.com/jakecoffman/tanklets/pkt"
-	"strings"
 )
 
 // keep track of who you are
@@ -81,7 +82,7 @@ network:
 	accumulator += dt
 	for accumulator >= physicsTickrate {
 		for _, tank := range g.game.Tanks {
-			tank.FixedUpdate(physicsTickrate)
+			FixedUpdate(tank)
 		}
 		g.game.Space.Step(physicsTickrate)
 		accumulator -= physicsTickrate

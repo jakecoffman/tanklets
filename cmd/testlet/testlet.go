@@ -33,7 +33,7 @@ func main() {
 	game1Cmd := exec.Command("tanklets")
 	game1Cmd.Env = os.Environ()
 	start(game1Cmd)
-	game2Cmd := exec.Command("tanklets", "650")
+	game2Cmd := exec.Command("tanklets", "800")
 	game2Cmd.Env = os.Environ()
 	start(game2Cmd)
 

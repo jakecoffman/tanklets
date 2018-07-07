@@ -76,8 +76,6 @@ func join(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	game.Tanks[tank.ID] = tank
 }
 
-var lastLocationSeq uint64
-
 func location(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	l := pkt.Location{}
 	if _, err := l.Serialize(packet.Bytes); err != nil {
@@ -85,11 +83,11 @@ func location(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 		return
 	}
 
-	if l.Sequence < lastLocationSeq {
+	if l.Sequence < network.lastLocationSeq {
 		fmt.Println("out of order packet")
 		return
 	}
-	lastLocationSeq = l.Sequence
+	network.lastLocationSeq = l.Sequence
 
 	player := game.Tanks[tanklets.PlayerID(l.ID)]
 	if player == nil {
@@ -122,8 +120,6 @@ func location(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	}
 }
 
-var lastBoxSeq uint64
-
 func boxlocation(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 	l := pkt.BoxLocation{}
 	if _, err := l.Serialize(packet.Bytes); err != nil {
@@ -131,10 +127,10 @@ func boxlocation(packet tanklets.Packet, game *tanklets.Game, network *Client) {
 		return
 	}
 
-	if l.Sequence < lastBoxSeq {
+	if l.Sequence < network.lastBoxSeq {
 		return
 	}
-	lastBoxSeq = l.Sequence
+	network.lastBoxSeq = l.Sequence
 
 	box := game.Boxes[tanklets.BoxID(l.ID)]
 	if box == nil {

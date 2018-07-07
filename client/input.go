@@ -1,6 +1,9 @@
 package client
 
 import (
+	"os"
+	"runtime/pprof"
+
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/jakecoffman/cp"
@@ -41,6 +44,9 @@ func MouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Ac
 func KeyCallback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if key == glfw.KeyEscape && action == glfw.Press {
 		window.SetShouldClose(true)
+	}
+	if key == glfw.KeyF12 {
+		pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
 	}
 	if key >= 0 && key < 1024 {
 		if action == glfw.Press {

@@ -19,6 +19,8 @@ type Client struct {
 	UdpConn *net.UDPConn
 
 	IsConnecting, IsConnected bool
+
+	lastLocationSeq, lastBoxSeq uint64
 }
 
 func NewClient(addr string) (*Client, error) {
@@ -56,11 +58,21 @@ func (c *Client) Close() error {
 func (c *Client) Recv() {
 	var err error
 	var n int
+	reader := bufio.NewReader(c.UdpConn)
+	defer func() {
+		c.IsConnected = false
+	}()
+
 	for {
-		data := make([]byte, 2048)
-		n, err = bufio.NewReader(c.UdpConn).Read(data)
+		err = c.UdpConn.SetReadDeadline(time.Now().Add(5 * time.Second))
 		if err != nil {
-			c.IsConnected = false
+			log.Println(err)
+			return
+		}
+
+		data := make([]byte, 2048)
+		n, err = reader.Read(data)
+		if err != nil {
 			log.Println(err)
 			return
 		}

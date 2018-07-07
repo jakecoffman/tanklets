@@ -33,11 +33,11 @@ func Loop() {
 	}
 	defer window.Destroy()
 	if len(os.Args) > 1 {
-		y, err := strconv.Atoi(os.Args[1])
+		pos, err := strconv.Atoi(os.Args[1])
 		if err != nil {
 			log.Println(err)
 		} else {
-			window.SetPos(0, y)
+			window.SetPos(pos, 0)
 		}
 	} else {
 		window.SetPos(0, 0)

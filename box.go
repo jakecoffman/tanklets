@@ -21,11 +21,11 @@ func (g *Game) NewBox(id BoxID) *Box {
 
 	pivot := g.Space.AddConstraint(cp.NewPivotJoint2(g.Space.StaticBody, box, cp.Vector{}, cp.Vector{}))
 	pivot.SetMaxBias(0)       // disable joint correction
-	pivot.SetMaxForce(1000.0) // emulate linear friction
+	pivot.SetMaxForce(10000.0) // emulate linear friction
 
 	gear := g.Space.AddConstraint(cp.NewGearJoint(g.Space.StaticBody, box, 0.0, 1.0))
 	gear.SetMaxBias(0)
-	gear.SetMaxForce(5000.0) // emulate angular friction
+	gear.SetMaxForce(50000.0) // emulate angular friction
 
 	g.Boxes[id] = &Box{Body: box, ID: id}
 	return g.Boxes[id]

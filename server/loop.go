@@ -90,7 +90,7 @@ func Lobby(network *Server) {
 var BoxLocations = map[tanklets.BoxID]pkt.BoxLocation{}
 
 const (
-	netTickrate     = 20
+	netTickrate     = 60
 	boxTickrate     = 10
 	playerUpdates   = time.Second / netTickrate
 	boxUpdates      = time.Second / boxTickrate
